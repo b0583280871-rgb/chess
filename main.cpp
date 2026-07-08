@@ -11,18 +11,13 @@ namespace config {
 
     constexpr int CELL_SIZE = 100;
 
-    // One selection slot per player/color. Bump this and extend playerIndexOf
-    // (below, near colorOf/pieceOf) when the game grows past two colors.
     constexpr int NUM_PLAYERS = 2;
 
     struct PieceStats {
-        //2 זמן המנוחה קבוע לכל כלי בלי תלות בפעולה 
-        //1. כרגע התחשבנו במהירות תזוזה לכל כלי לפי מהירות תזוזה למשבצת לאותו הכלי 
         double speedCellsPerSec; 
         long   restMs;            
     };
 
-    //נחליף את המהירויות ברגע שנקבל אותן
     inline PieceStats statsFor(char piece) {
         switch (piece) {
             case 'Q': return {4.0, 0};
@@ -45,7 +40,7 @@ struct Board {
 struct Selection {
     bool active = false;
     int  row = 0, col = 0;
-    long selectedAtMs = 0;   // tie-break: which pending selection an ambiguous click completes
+    long selectedAtMs = 0;  
 };
 
 struct PieceMove {
@@ -53,13 +48,13 @@ struct PieceMove {
     int         toRow, toCol;
     long        startMs;
     long        durationMs;
-    std::string piece;          // identity travels inside the move, not on the board
+    std::string piece;          
 };
 
 struct GameState {
     Board                  board;
     long                   elapsedMs = 0;
-    std::vector<Selection> selections;   // one per player/color, indexed by playerIndexOf
+    std::vector<Selection> selections;   
     std::vector<PieceMove> activeMoves;
 };
 
@@ -156,8 +151,6 @@ bool isEmpty(const std::string& tok) { return tok == "."; }
 char colorOf(const std::string& tok) { return tok[0]; }
 char pieceOf(const std::string& tok) { return tok[1]; }
 
-// Maps a board color to its selection-array slot. Add cases here (and bump
-// config::NUM_PLAYERS) the day the game supports more than two colors.
 int playerIndexOf(char color) {
     switch (color) {
         case 'w': return 0;
@@ -176,7 +169,6 @@ bool isLegalMove(const Board& /*board*/, const PieceMove& /*move*/, char /*piece
 }
 
 void resolveMoves(GameState& st) {
-    // Split into moves that have arrived and moves still in the air.
     std::vector<size_t>    due;
     std::vector<PieceMove> stillMoving;
     for (size_t i = 0; i < st.activeMoves.size(); ++i) {
@@ -185,7 +177,6 @@ void resolveMoves(GameState& st) {
         else                                          stillMoving.push_back(m);
     }
 
-    // Deterministic landing order: earliest arrival first, launch order breaks ties.
     std::sort(due.begin(), due.end(), [&](size_t a, size_t b) {
         long ta = st.activeMoves[a].startMs + st.activeMoves[a].durationMs;
         long tb = st.activeMoves[b].startMs + st.activeMoves[b].durationMs;
@@ -201,14 +192,12 @@ void resolveMoves(GameState& st) {
         } else {                                                 // a friendly is sitting there
             std::string& origin = st.board.grid[m.fromRow][m.fromCol];
             if (isEmpty(origin)) origin = m.piece;               // return home instantly
-            // else: the piece is lost
         }
     }
 
     st.activeMoves = stillMoving;
 }
 
-// Index of whichever pending selection has been waiting longest, or -1 if none.
 int oldestPendingSide(const GameState& st) {
     int side = -1;
     for (size_t i = 0; i < st.selections.size(); ++i) {
@@ -219,7 +208,6 @@ int oldestPendingSide(const GameState& st) {
     return side;
 }
 
-// Sends `side`'s pending piece toward (toRow, toCol) and clears that selection.
 void sendMove(GameState& st, int side, int toRow, int toCol) {
     Selection& sel = st.selections[side];
     const std::string selected = st.board.grid[sel.row][sel.col];
@@ -228,7 +216,7 @@ void sendMove(GameState& st, int side, int toRow, int toCol) {
     m.fromRow = sel.row; m.fromCol = sel.col;
     m.toRow = toRow;     m.toCol = toCol;
     m.startMs = st.elapsedMs;
-    m.piece   = selected;                              // carry the piece with the move
+    m.piece   = selected;                             
 
     char piece = pieceOf(selected);
     double speed = config::statsFor(piece).speedCellsPerSec;
@@ -236,10 +224,10 @@ void sendMove(GameState& st, int side, int toRow, int toCol) {
     m.durationMs = (speed > 0.0) ? (long)(dist / speed * 1000.0) : 0;
 
     if (isLegalMove(st.board, m, piece)) {
-        st.board.grid[m.fromRow][m.fromCol] = ".";     // source empties the moment it lifts off
-        st.activeMoves.push_back(m);                   // once airborne the piece is off the board
+        st.board.grid[m.fromRow][m.fromCol] = ".";     
+        st.activeMoves.push_back(m);                   
     }
-    sel = Selection{};                                  // that side's selection clears once sent
+    sel = Selection{};                                  
 }
 
 void handleClick(GameState& st, int x, int y) {
@@ -254,33 +242,23 @@ void handleClick(GameState& st, int x, int y) {
 
     if (!isEmpty(token)) {
         int side = playerIndexOf(colorOf(token));
-        if (side < 0 || side >= (int)st.selections.size()) return;   // unrecognized color
+        if (side < 0 || side >= (int)st.selections.size()) return;   
 
         if (st.selections[side].active) {
-            // Clicking your own already-pending piece again: always a reselect,
-            // never ambiguous -- a piece is never "an enemy" to its own side.
             st.selections[side] = {true, row, col, st.elapsedMs};
             return;
         }
 
         int target = oldestPendingSide(st);
         if (target >= 0) {
-            // Someone else already has a piece pending, and this square holds a
-            // different color -- it's an enemy square, so this click can only ever
-            // be a SECOND click (a capture target), never a first click that starts
-            // a fresh selection for the piece sitting here.
             sendMove(st, target, row, col);
             return;
         }
 
-        // Nobody anywhere has anything pending: a genuine first click, so this
-        // piece becomes side's own fresh selection.
         st.selections[side] = {true, row, col, st.elapsedMs};
         return;
     }
 
-    // Empty cell: always a target, never a select. Completes whichever pending
-    // selection has been waiting longest.
     int target = oldestPendingSide(st);
     if (target >= 0) sendMove(st, target, row, col);
 }
@@ -306,7 +284,6 @@ void runCommands(const std::vector<std::string>& commands, GameState& st) {
             std::string rest; std::getline(ss, rest);
             if (trim(rest) == "board") std::cout << formatBoard(st.board);
         }
-        // unknown commands ignored this iteration
     }
 }
 
