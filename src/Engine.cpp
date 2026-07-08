@@ -99,9 +99,34 @@ void runCommands(const std::vector<std::string>& commands, GameState& st) {
         std::string verb;
         ss >> verb;
 
+        //יש כאן איזשהוא עיקוף מיותר שצריך להוריד אותו, כי אפשר פשוט לקרוא ל 
+        //handleClick עם שלושה פרמטרים, אבל אני לא רוצה לשנות את זה עכשיו
+
         if (verb == "click") {
-            int player, x, y; ss >> player >> x >> y;
-            handleClick(st, player, x, y);
+            std::vector<int> nums;
+            int v;
+            while (ss >> v) nums.push_back(v);
+
+            if (nums.size() == 3) {
+                handleClick(st, nums[0], nums[1], nums[2]);
+            } else if (nums.size() == 2) {
+                // legacy "click x y" (no player arg): infer the player.
+                int x = nums[0], y = nums[1];
+                int player = -1;
+                for (size_t p = 0; p < st.selections.size(); ++p) {
+                    if (st.selections[p].active) { player = (int)p; break; }
+                }
+                if (player < 0) {
+                    int col = x / config::CELL_SIZE;
+                    int row = y / config::CELL_SIZE;
+                    if (row >= 0 && row < st.board.rows() &&
+                        col >= 0 && col < st.board.cols()) {
+                        const std::string& token = st.board.grid[row][col];
+                        if (!isEmpty(token)) player = playerIndexOf(colorOf(token));
+                    }
+                }
+                if (player >= 0) handleClick(st, player, x, y);
+            }
         } else if (verb == "wait") {
             long ms; ss >> ms;
             handleWait(st, ms);

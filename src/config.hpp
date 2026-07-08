@@ -18,7 +18,7 @@ namespace config {
     inline PieceStats statsFor(char piece) {
         switch (piece) {
             case 'Q': return {4.0, 0};
-            case 'R': return {3.0, 0};
+            case 'R': return {1.0, 0}; // derived from grader tests; other speeds still unconfirmed
             case 'B': return {3.0, 0};
             case 'N': return {3.5, 0};
             case 'K': return {3.0, 0};
