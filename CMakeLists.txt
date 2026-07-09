@@ -12,7 +12,7 @@ add_executable(chess_game
     io/BoardParser.cpp
     io/BoardPrinter.cpp
 )
-+(chess_game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(chess_game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 option(BUILD_TESTS "Build the doctest test suite" ON)
 
