@@ -7,7 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(chess_game
     main.cpp
     model/Board.cpp
-    rules/Movement.cpp
+    rules/PieceRules.cpp
+    rules/RuleEngine.cpp
+    realtime/RealTimeArbiter.cpp
     engine/Engine.cpp
     io/BoardParser.cpp
     io/BoardPrinter.cpp
@@ -26,7 +28,9 @@ if(BUILD_TESTS)
         tests/Movement.tests.cpp
         tests/Engine.tests.cpp
         model/Board.cpp
-        rules/Movement.cpp
+        rules/PieceRules.cpp
+        rules/RuleEngine.cpp
+        realtime/RealTimeArbiter.cpp
         engine/Engine.cpp
         io/BoardParser.cpp
         io/BoardPrinter.cpp

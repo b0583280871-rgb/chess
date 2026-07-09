@@ -1,13 +1,6 @@
-#include "Movement.hpp"
+#include "rules/RuleEngine.hpp"
 
-#include <cmath>
-
-#include "config.hpp"
-
-double cellDistance(int r1, int c1, int r2, int c2) {
-    double dr = r2 - r1, dc = c2 - c1;
-    return std::sqrt(dr * dr + dc * dc);
-}
+#include "rules/PieceRules.hpp"
 
 bool isLegalMove(const Board& board, const PieceMove& move, char piece) {
     auto it = config::moveShapes.find(piece);

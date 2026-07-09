@@ -12,7 +12,3 @@ struct Board {
 bool isEmpty(const std::string& tok);
 char colorOf(const std::string& tok);
 char pieceOf(const std::string& tok);
-
-int sign(int v);
-
-bool isPathClear(const Board& board, int fromRow, int fromCol, int toRow, int toCol);

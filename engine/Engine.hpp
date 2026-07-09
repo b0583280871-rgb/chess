@@ -5,8 +5,6 @@
 
 #include "model/GameState.hpp"
 
-void resolveMoves(GameState& st);
-
 void sendMove(GameState& st, int toRow, int toCol);
 
 void handleClick(GameState& st, int x, int y);

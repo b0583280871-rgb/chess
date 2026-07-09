@@ -1,6 +1,7 @@
 #include "doctest.h"
 
-#include "rules/Movement.hpp"
+#include "realtime/RealTimeArbiter.hpp"
+#include "rules/RuleEngine.hpp"
 #include "model/Board.hpp"
 #include "model/GameState.hpp"
 #include "io/BoardParser.hpp"

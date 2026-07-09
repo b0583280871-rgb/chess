@@ -3,6 +3,7 @@
 #include "model/Board.hpp"
 #include "io/BoardParser.hpp"
 #include "io/BoardPrinter.hpp"
+#include "rules/PieceRules.hpp"
 
 TEST_CASE("trim removes leading and trailing whitespace") {
     CHECK(trim("  hello  ") == "hello");
