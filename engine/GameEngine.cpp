@@ -7,21 +7,21 @@
 
 void sendMove(GameState& st, int toRow, int toCol) {
     Selection& sel = st.selection;
-    const std::string selected = st.board.grid[sel.row][sel.col];
+    const std::string selected = st.board.grid[sel.cell.row][sel.cell.col];
 
     PieceMove m;
-    m.fromRow = sel.row; m.fromCol = sel.col;
-    m.toRow = toRow;     m.toCol = toCol;
+    m.from = sel.cell;
+    m.to   = Position{toRow, toCol};
     m.startMs = st.elapsedMs;
     m.piece   = selected;
 
     char piece = pieceOf(selected);
     double speed = config::statsFor(piece).speedCellsPerSec;
-    double dist  = cellDistance(m.fromRow, m.fromCol, toRow, toCol);
+    double dist  = cellDistance(m.from, m.to);
     m.durationMs = (speed > 0.0) ? (long)(dist / speed * 1000.0) : 0;
 
     if (isLegalMove(st.board, m, piece)) {
-        st.board.grid[m.fromRow][m.fromCol] = ".";
+        st.board.grid[m.from.row][m.from.col] = ".";
         st.activeMoves.push_back(m);
     }
     sel = Selection{};

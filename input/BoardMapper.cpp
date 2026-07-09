@@ -2,7 +2,7 @@
 
 #include "rules/config.hpp"
 
-std::optional<std::pair<int, int>> pixelToCell(int x, int y, const Board& board) {
+std::optional<Position> pixelToCell(int x, int y, const Board& board) {
     if (x < 0 || y < 0) return std::nullopt;
 
     int col = x / config::CELL_SIZE;
@@ -12,5 +12,5 @@ std::optional<std::pair<int, int>> pixelToCell(int x, int y, const Board& board)
         col < 0 || col >= board.cols())
         return std::nullopt;
 
-    return std::make_pair(row, col);
+    return Position{row, col};
 }

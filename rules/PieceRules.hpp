@@ -4,10 +4,11 @@
 #include <map>
 
 #include "model/Board.hpp"
+#include "model/Position.hpp"
 
 int sign(int v);
 
-bool isPathClear(const Board& board, int fromRow, int fromCol, int toRow, int toCol);
+bool isPathClear(const Board& board, Position from, Position to);
 
 namespace config {
 

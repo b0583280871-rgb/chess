@@ -4,12 +4,12 @@
 
 int sign(int v) { return (v > 0) - (v < 0); }
 
-bool isPathClear(const Board& board, int fromRow, int fromCol, int toRow, int toCol) {
-    int stepRow = sign(toRow - fromRow);
-    int stepCol = sign(toCol - fromCol);
+bool isPathClear(const Board& board, Position from, Position to) {
+    int stepRow = sign(to.row - from.row);
+    int stepCol = sign(to.col - from.col);
 
-    int r = fromRow + stepRow, c = fromCol + stepCol;
-    while (r != toRow || c != toCol) {
+    int r = from.row + stepRow, c = from.col + stepCol;
+    while (r != to.row || c != to.col) {
         if (!isEmpty(board.grid[r][c])) return false;
         r += stepRow;
         c += stepCol;

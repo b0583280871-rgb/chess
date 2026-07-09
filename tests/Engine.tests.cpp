@@ -22,7 +22,7 @@ namespace {
 
 TEST_CASE("resolveMoves keeps a move active before its arrival time") {
     GameState st = makeState({"wR . . ."});
-    PieceMove m; m.fromRow = 0; m.fromCol = 0; m.toRow = 0; m.toCol = 3;
+    PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 1000; m.piece = "wR";
     st.activeMoves.push_back(m);
     st.elapsedMs = 500;
@@ -35,7 +35,7 @@ TEST_CASE("resolveMoves keeps a move active before its arrival time") {
 
 TEST_CASE("resolveMoves lands a move onto an empty target once due") {
     GameState st = makeState({"wR . . ."});
-    PieceMove m; m.fromRow = 0; m.fromCol = 0; m.toRow = 0; m.toCol = 3;
+    PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 1000; m.piece = "wR";
     st.activeMoves.push_back(m);
     st.elapsedMs = 1000;
@@ -48,7 +48,7 @@ TEST_CASE("resolveMoves lands a move onto an empty target once due") {
 
 TEST_CASE("resolveMoves captures an enemy occupying the target") {
     GameState st = makeState({"wR . . bP"});
-    PieceMove m; m.fromRow = 0; m.fromCol = 0; m.toRow = 0; m.toCol = 3;
+    PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 500; m.piece = "wR";
     st.activeMoves.push_back(m);
     st.elapsedMs = 500;
@@ -60,7 +60,7 @@ TEST_CASE("resolveMoves captures an enemy occupying the target") {
 
 TEST_CASE("resolveMoves bounces a piece home when the target turned friendly and the source is free") {
     GameState st = makeState({". . . wP"});
-    PieceMove m; m.fromRow = 0; m.fromCol = 0; m.toRow = 0; m.toCol = 3;
+    PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 500; m.piece = "wR";
     st.activeMoves.push_back(m);
     st.elapsedMs = 500;
@@ -73,7 +73,7 @@ TEST_CASE("resolveMoves bounces a piece home when the target turned friendly and
 
 TEST_CASE("resolveMoves loses a piece when the target turned friendly and the source is occupied") {
     GameState st = makeState({"wN . . wP"});
-    PieceMove m; m.fromRow = 0; m.fromCol = 0; m.toRow = 0; m.toCol = 3;
+    PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 500; m.piece = "wR";
     st.activeMoves.push_back(m);
     st.elapsedMs = 500;
@@ -86,9 +86,9 @@ TEST_CASE("resolveMoves loses a piece when the target turned friendly and the so
 
 TEST_CASE("resolveMoves settles multiple due moves in arrival order") {
     GameState st = makeState({". . ."});
-    PieceMove first; first.fromRow = 0; first.fromCol = 0; first.toRow = 0; first.toCol = 1;
+    PieceMove first; first.from = {0, 0}; first.to = {0, 1};
     first.startMs = 0; first.durationMs = 200; first.piece = "wP";
-    PieceMove second; second.fromRow = 0; second.fromCol = 2; second.toRow = 0; second.toCol = 1;
+    PieceMove second; second.from = {0, 2}; second.to = {0, 1};
     second.startMs = 0; second.durationMs = 100; second.piece = "bP";
     st.activeMoves = {first, second};
     st.elapsedMs = 300;
@@ -100,20 +100,20 @@ TEST_CASE("resolveMoves settles multiple due moves in arrival order") {
 
 TEST_CASE("sendMove clears the source and queues an active move for a legal move") {
     GameState st = makeState({"wR . . .", ". . . .", ". . . .", ". . . ."});
-    st.selection = {true, 0, 0, 0};
+    st.selection = {true, {0, 0}, 0};
 
     sendMove(st, 0, 3);
 
     CHECK(st.board.grid[0][0] == ".");
     REQUIRE(st.activeMoves.size() == 1);
     CHECK(st.activeMoves[0].piece == "wR");
-    CHECK(st.activeMoves[0].toCol == 3);
+    CHECK(st.activeMoves[0].to.col == 3);
     CHECK_FALSE(st.selection.active);
 }
 
 TEST_CASE("sendMove ignores an illegal move and leaves the board untouched") {
     GameState st = makeState({"wR . . .", ". . . .", ". . . .", ". . . ."});
-    st.selection = {true, 0, 0, 0};
+    st.selection = {true, {0, 0}, 0};
 
     sendMove(st, 1, 1); // diagonal - illegal for a rook
 
@@ -124,7 +124,7 @@ TEST_CASE("sendMove ignores an illegal move and leaves the board untouched") {
 
 TEST_CASE("sendMove computes duration from piece speed and travel distance") {
     GameState st = makeState({"wQ . . .", ". . . .", ". . . .", ". . . ."});
-    st.selection = {true, 0, 0, 0};
+    st.selection = {true, {0, 0}, 0};
 
     sendMove(st, 0, 3); // queen: 4 cells/sec, 3 cells travelled
 
@@ -138,40 +138,40 @@ TEST_CASE("handleClick opens a fresh selection when clicking an idle piece") {
     Controller::click(st, 5, 5); // inside cell (0,0)
 
     CHECK(st.selection.active);
-    CHECK(st.selection.row == 0);
-    CHECK(st.selection.col == 0);
+    CHECK(st.selection.cell.row == 0);
+    CHECK(st.selection.cell.col == 0);
 }
 
 TEST_CASE("handleClick reselects when clicking another piece of the same color") {
     GameState st = makeState({"wK . wQ .", ". . . .", ". . . .", ". . . ."});
-    st.selection = {true, 0, 0, 0};
+    st.selection = {true, {0, 0}, 0};
 
     Controller::click(st, 205, 5); // cell (0,2), also white
 
     CHECK(st.selection.active);
-    CHECK(st.selection.col == 2);
+    CHECK(st.selection.cell.col == 2);
 }
 
 TEST_CASE("handleClick completes a pending selection when clicking an empty cell") {
     GameState st = makeState({"wR . . .", ". . . .", ". . . .", ". . . ."});
-    st.selection = {true, 0, 0, 0};
+    st.selection = {true, {0, 0}, 0};
 
     Controller::click(st, 305, 5); // empty cell (0,3)
 
     CHECK(st.board.grid[0][0] == ".");
     REQUIRE(st.activeMoves.size() == 1);
-    CHECK(st.activeMoves[0].toCol == 3);
+    CHECK(st.activeMoves[0].to.col == 3);
 }
 
 TEST_CASE("handleClick completes a pending selection as a capture on an enemy cell") {
     GameState st = makeState({"wR . . bP", ". . . .", ". . . .", ". . . ."});
-    st.selection = {true, 0, 0, 0};
+    st.selection = {true, {0, 0}, 0};
 
     Controller::click(st, 305, 5); // the black pawn at (0,3)
 
     CHECK(st.board.grid[0][0] == ".");
     REQUIRE(st.activeMoves.size() == 1);
-    CHECK(st.activeMoves[0].toCol == 3);
+    CHECK(st.activeMoves[0].to.col == 3);
     CHECK_FALSE(st.selection.active);
 }
 
@@ -183,7 +183,7 @@ TEST_CASE("handleClick with no pending selection opens a selection regardless of
     CHECK(st.board.grid[0][3] == "bP");
     CHECK(st.activeMoves.empty());
     CHECK(st.selection.active);
-    CHECK(st.selection.col == 3);
+    CHECK(st.selection.cell.col == 3);
 }
 
 TEST_CASE("handleClick ignores clicks outside the board") {
@@ -202,7 +202,7 @@ TEST_CASE("handleClick on an empty cell with no pending selection is a no-op") {
 
 TEST_CASE("handleWait advances the clock and resolves due moves") {
     GameState st = makeState({"wR . . ."});
-    PieceMove m; m.fromRow = 0; m.fromCol = 0; m.toRow = 0; m.toCol = 3;
+    PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 100; m.piece = "wR";
     st.activeMoves.push_back(m);
 

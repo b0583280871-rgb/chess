@@ -9,17 +9,17 @@ bool isLegalMove(const Board& board, const PieceMove& move, char piece) {
     const config::MoveRule& rule = it->second;
     char color = move.piece[0];
 
-    const std::string &destination = board.grid[move.toRow][move.toCol];
+    const std::string &destination = board.grid[move.to.row][move.to.col];
     if (!isEmpty(destination) && colorOf(destination) == color) return false;
 
     bool isCapture = !isEmpty(destination);
     const config::MoveShapeFn& shape = (isCapture && rule.captureShape) ? rule.captureShape : rule.shape;
 
-    int dRow = move.toRow - move.fromRow;
-    int dCol = move.toCol - move.fromCol;
+    int dRow = move.to.row - move.from.row;
+    int dCol = move.to.col - move.from.col;
     if (!shape(dRow, dCol, color)) return false;
 
-    if (rule.slides && !isPathClear(board, move.fromRow, move.fromCol, move.toRow, move.toCol))
+    if (rule.slides && !isPathClear(board, move.from, move.to))
         return false;
 
     return true;

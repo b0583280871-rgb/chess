@@ -10,24 +10,24 @@ namespace Controller {
         auto cell = pixelToCell(x, y, st.board);
         if (!cell) return;
 
-        int row = cell->first;
-        int col = cell->second;
+        int row = cell->row;
+        int col = cell->col;
 
         const std::string& token = st.board.grid[row][col];
 
         if (st.selection.active) {
-            const std::string& selectedTok = st.board.grid[st.selection.row][st.selection.col];
+            const std::string& selectedTok = st.board.grid[st.selection.cell.row][st.selection.cell.col];
             bool sameSide = !isEmpty(token) && colorOf(token) == colorOf(selectedTok);
             if (sameSide) {
-                st.selection = {true, row, col, st.elapsedMs};   // reselect
+                st.selection = {true, {row, col}, st.elapsedMs}; 
             } else {
-                sendMove(st, row, col);                           // complete: move or capture
+                sendMove(st, row, col);                          
             }
             return;
         }
 
         if (!isEmpty(token)) {
-            st.selection = {true, row, col, st.elapsedMs};       // open a fresh selection
+            st.selection = {true, {row, col}, st.elapsedMs}; 
         }
     }
 

@@ -9,8 +9,8 @@
 namespace {
     PieceMove makeMove(int fromRow, int fromCol, int toRow, int toCol, const std::string& piece) {
         PieceMove m;
-        m.fromRow = fromRow; m.fromCol = fromCol;
-        m.toRow = toRow;     m.toCol = toCol;
+        m.from = {fromRow, fromCol};
+        m.to   = {toRow, toCol};
         m.startMs = 0;       m.durationMs = 0;
         m.piece = piece;
         return m;
@@ -18,9 +18,9 @@ namespace {
 }
 
 TEST_CASE("cellDistance computes euclidean distance in cells") {
-    CHECK(cellDistance(0, 0, 3, 4) == doctest::Approx(5.0));
-    CHECK(cellDistance(2, 2, 2, 2) == doctest::Approx(0.0));
-    CHECK(cellDistance(0, 0, 0, 5) == doctest::Approx(5.0));
+    CHECK(cellDistance({0, 0}, {3, 4}) == doctest::Approx(5.0));
+    CHECK(cellDistance({2, 2}, {2, 2}) == doctest::Approx(0.0));
+    CHECK(cellDistance({0, 0}, {0, 5}) == doctest::Approx(5.0));
 }
 
 TEST_CASE("isLegalMove: king moves one square in any direction") {

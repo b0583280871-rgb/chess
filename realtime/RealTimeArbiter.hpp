@@ -1,7 +1,8 @@
 #pragma once
 
 #include "model/GameState.hpp"
+#include "model/Position.hpp"
 
-double cellDistance(int r1, int c1, int r2, int c2);
+double cellDistance(Position a, Position b);
 
 void resolveMoves(GameState& st);

@@ -156,17 +156,17 @@ TEST_CASE("sign returns -1, 0 or 1") {
 
 TEST_CASE("isPathClear allows adjacent squares with nothing in between") {
     Board b = parseBoard({"wK .", ". bK"});
-    CHECK(isPathClear(b, 0, 0, 1, 1));
+    CHECK(isPathClear(b, {0, 0}, {1, 1}));
 }
 
 TEST_CASE("isPathClear returns true when all intermediate squares are empty") {
     Board b = parseBoard({"wR . . bR"});
-    CHECK(isPathClear(b, 0, 0, 0, 3));
+    CHECK(isPathClear(b, {0, 0}, {0, 3}));
 }
 
 TEST_CASE("isPathClear returns false when a piece blocks the path") {
     Board b = parseBoard({"wR . wP bR"});
-    CHECK_FALSE(isPathClear(b, 0, 0, 0, 3));
+    CHECK_FALSE(isPathClear(b, {0, 0}, {0, 3}));
 }
 
 TEST_CASE("isPathClear works along diagonals") {
@@ -176,5 +176,5 @@ TEST_CASE("isPathClear works along diagonals") {
         ". . bP .",
         ". . . bB"
     });
-    CHECK_FALSE(isPathClear(b, 0, 0, 3, 3));
+    CHECK_FALSE(isPathClear(b, {0, 0}, {3, 3}));
 }

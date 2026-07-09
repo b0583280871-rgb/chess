@@ -1,8 +1,8 @@
 #pragma once
 
 #include <optional>
-#include <utility>
 
 #include "model/Board.hpp"
+#include "model/Position.hpp"
 
-std::optional<std::pair<int, int>> pixelToCell(int x, int y, const Board& board);
+std::optional<Position> pixelToCell(int x, int y, const Board& board);

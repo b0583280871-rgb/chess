@@ -5,8 +5,8 @@
 
 #include "model/Board.hpp"
 
-double cellDistance(int r1, int c1, int r2, int c2) {
-    double dr = r2 - r1, dc = c2 - c1;
+double cellDistance(Position a, Position b) {
+    double dr = b.row - a.row, dc = b.col - a.col;
     return std::sqrt(dr * dr + dc * dc);
 }
 
@@ -28,11 +28,11 @@ void resolveMoves(GameState& st) {
 
     for (size_t idx : due) {
         const PieceMove& m = st.activeMoves[idx];
-        std::string& target = st.board.grid[m.toRow][m.toCol];
+        std::string& target = st.board.grid[m.to.row][m.to.col];
         if (isEmpty(target) || colorOf(target) != m.piece[0]) {
             target = m.piece;
         } else {
-            std::string& origin = st.board.grid[m.fromRow][m.fromCol];
+            std::string& origin = st.board.grid[m.from.row][m.from.col];
             if (isEmpty(origin)) origin = m.piece;
         }
     }
