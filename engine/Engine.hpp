@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "GameState.hpp"
+#include "model/GameState.hpp"
 
 void resolveMoves(GameState& st);
 

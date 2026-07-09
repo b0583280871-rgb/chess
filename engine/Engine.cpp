@@ -4,9 +4,11 @@
 #include <iostream>
 #include <sstream>
 
-#include "Board.hpp"
-#include "Movement.hpp"
-#include "config.hpp"
+#include "model/Board.hpp"
+#include "rules/Movement.hpp"
+#include "rules/config.hpp"
+#include "io/BoardParser.hpp"
+#include "io/BoardPrinter.hpp"
 
 void resolveMoves(GameState& st) {
     std::vector<size_t>    due;

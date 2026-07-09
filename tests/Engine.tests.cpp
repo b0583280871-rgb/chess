@@ -1,8 +1,10 @@
 #include "doctest.h"
 
-#include "Engine.hpp"
-#include "Board.hpp"
-#include "GameState.hpp"
+#include "engine/Engine.hpp"
+#include "model/Board.hpp"
+#include "model/GameState.hpp"
+#include "io/BoardParser.hpp"
+#include "io/BoardPrinter.hpp"
 
 #include <sstream>
 #include <iostream>

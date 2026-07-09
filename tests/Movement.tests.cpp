@@ -1,8 +1,9 @@
 #include "doctest.h"
 
-#include "Movement.hpp"
-#include "Board.hpp"
-#include "GameState.hpp"
+#include "rules/Movement.hpp"
+#include "model/Board.hpp"
+#include "model/GameState.hpp"
+#include "io/BoardParser.hpp"
 
 namespace {
     PieceMove makeMove(int fromRow, int fromCol, int toRow, int toCol, const std::string& piece) {

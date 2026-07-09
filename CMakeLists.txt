@@ -5,12 +5,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(chess_game
-    src/main.cpp
-    src/Board.cpp
-    src/Movement.cpp
-    src/Engine.cpp
+    main.cpp
+    model/Board.cpp
+    rules/Movement.cpp
+    engine/Engine.cpp
+    io/BoardParser.cpp
+    io/BoardPrinter.cpp
 )
-target_include_directories(chess_game PRIVATE src)
++(chess_game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 option(BUILD_TESTS "Build the doctest test suite" ON)
 
@@ -23,11 +25,13 @@ if(BUILD_TESTS)
         tests/Board.tests.cpp
         tests/Movement.tests.cpp
         tests/Engine.tests.cpp
-        src/Board.cpp
-        src/Movement.cpp
-        src/Engine.cpp
+        model/Board.cpp
+        rules/Movement.cpp
+        engine/Engine.cpp
+        io/BoardParser.cpp
+        io/BoardPrinter.cpp
     )
-    target_include_directories(chess_tests PRIVATE src third_party)
+    target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} third_party)
 
     add_test(NAME chess_tests COMMAND chess_tests)
 endif()

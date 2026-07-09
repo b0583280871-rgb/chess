@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Board.hpp"
-#include "GameState.hpp"
+#include "model/Board.hpp"
+#include "model/GameState.hpp"
 
 double cellDistance(int r1, int c1, int r2, int c2);
 

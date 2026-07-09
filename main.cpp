@@ -1,10 +1,11 @@
 #include <iostream>
 #include <string>
 
-#include "Board.hpp"
-#include "Engine.hpp"
-#include "GameState.hpp"
-#include "config.hpp"
+#include "model/Board.hpp"
+#include "engine/Engine.hpp"
+#include "model/GameState.hpp"
+#include "rules/config.hpp"
+#include "io/BoardParser.hpp"
 
 int main() {
     std::string input, line;

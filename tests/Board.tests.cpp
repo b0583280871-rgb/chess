@@ -1,6 +1,8 @@
 #include "doctest.h"
 
-#include "Board.hpp"
+#include "model/Board.hpp"
+#include "io/BoardParser.hpp"
+#include "io/BoardPrinter.hpp"
 
 TEST_CASE("trim removes leading and trailing whitespace") {
     CHECK(trim("  hello  ") == "hello");
