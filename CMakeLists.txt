@@ -10,7 +10,10 @@ add_executable(chess_game
     rules/PieceRules.cpp
     rules/RuleEngine.cpp
     realtime/RealTimeArbiter.cpp
+    input/BoardMapper.cpp
+    input/Controller.cpp
     engine/Engine.cpp
+    engine/GameEngine.cpp
     io/BoardParser.cpp
     io/BoardPrinter.cpp
 )
@@ -31,7 +34,10 @@ if(BUILD_TESTS)
         rules/PieceRules.cpp
         rules/RuleEngine.cpp
         realtime/RealTimeArbiter.cpp
+        input/BoardMapper.cpp
+        input/Controller.cpp
         engine/Engine.cpp
+        engine/GameEngine.cpp
         io/BoardParser.cpp
         io/BoardPrinter.cpp
     )

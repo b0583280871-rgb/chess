@@ -1,6 +1,7 @@
 #include "doctest.h"
 
 #include "engine/Engine.hpp"
+#include "engine/GameEngine.hpp"
 #include "realtime/RealTimeArbiter.hpp"
 #include "model/Board.hpp"
 #include "model/GameState.hpp"
