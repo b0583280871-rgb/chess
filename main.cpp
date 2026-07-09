@@ -2,7 +2,7 @@
 #include <string>
 
 #include "model/Board.hpp"
-#include "engine/Engine.hpp"
+#include "texttests/ScriptRunner.hpp"
 #include "model/GameState.hpp"
 #include "rules/config.hpp"
 #include "io/BoardParser.hpp"
@@ -23,6 +23,6 @@ int main() {
         return 0;
     }
 
-    runCommands(sections.commandLines, state);
+    ScriptRunner::run(sections.commandLines, state);
     return 0;
 }

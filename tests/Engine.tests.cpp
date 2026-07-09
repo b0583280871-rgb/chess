@@ -1,7 +1,8 @@
 #include "doctest.h"
 
-#include "engine/Engine.hpp"
+#include "input/Controller.hpp"
 #include "engine/GameEngine.hpp"
+#include "texttests/ScriptRunner.hpp"
 #include "realtime/RealTimeArbiter.hpp"
 #include "model/Board.hpp"
 #include "model/GameState.hpp"
@@ -134,7 +135,7 @@ TEST_CASE("sendMove computes duration from piece speed and travel distance") {
 TEST_CASE("handleClick opens a fresh selection when clicking an idle piece") {
     GameState st = makeState({"wK . . .", ". . . .", ". . . .", ". . . ."});
 
-    handleClick(st, 5, 5); // inside cell (0,0)
+    Controller::click(st, 5, 5); // inside cell (0,0)
 
     CHECK(st.selection.active);
     CHECK(st.selection.row == 0);
@@ -145,7 +146,7 @@ TEST_CASE("handleClick reselects when clicking another piece of the same color")
     GameState st = makeState({"wK . wQ .", ". . . .", ". . . .", ". . . ."});
     st.selection = {true, 0, 0, 0};
 
-    handleClick(st, 205, 5); // cell (0,2), also white
+    Controller::click(st, 205, 5); // cell (0,2), also white
 
     CHECK(st.selection.active);
     CHECK(st.selection.col == 2);
@@ -155,7 +156,7 @@ TEST_CASE("handleClick completes a pending selection when clicking an empty cell
     GameState st = makeState({"wR . . .", ". . . .", ". . . .", ". . . ."});
     st.selection = {true, 0, 0, 0};
 
-    handleClick(st, 305, 5); // empty cell (0,3)
+    Controller::click(st, 305, 5); // empty cell (0,3)
 
     CHECK(st.board.grid[0][0] == ".");
     REQUIRE(st.activeMoves.size() == 1);
@@ -166,7 +167,7 @@ TEST_CASE("handleClick completes a pending selection as a capture on an enemy ce
     GameState st = makeState({"wR . . bP", ". . . .", ". . . .", ". . . ."});
     st.selection = {true, 0, 0, 0};
 
-    handleClick(st, 305, 5); // the black pawn at (0,3)
+    Controller::click(st, 305, 5); // the black pawn at (0,3)
 
     CHECK(st.board.grid[0][0] == ".");
     REQUIRE(st.activeMoves.size() == 1);
@@ -177,7 +178,7 @@ TEST_CASE("handleClick completes a pending selection as a capture on an enemy ce
 TEST_CASE("handleClick with no pending selection opens a selection regardless of piece color") {
     GameState st = makeState({"wR . . bP", ". . . .", ". . . .", ". . . ."});
 
-    handleClick(st, 305, 5); // black's pawn, nobody is pending
+    Controller::click(st, 305, 5); // black's pawn, nobody is pending
 
     CHECK(st.board.grid[0][3] == "bP");
     CHECK(st.activeMoves.empty());
@@ -187,15 +188,15 @@ TEST_CASE("handleClick with no pending selection opens a selection regardless of
 
 TEST_CASE("handleClick ignores clicks outside the board") {
     GameState st = makeState({"wK ."});
-    handleClick(st, -5, -5);
-    handleClick(st, 10000, 10000);
+    Controller::click(st, -5, -5);
+    Controller::click(st, 10000, 10000);
 
     CHECK_FALSE(st.selection.active);
 }
 
 TEST_CASE("handleClick on an empty cell with no pending selection is a no-op") {
     GameState st = makeState({". . .", ". . .", ". . ."});
-    handleClick(st, 5, 5);
+    Controller::click(st, 5, 5);
     CHECK_FALSE(st.selection.active);
 }
 
@@ -224,7 +225,7 @@ TEST_CASE("runCommands executes click, wait and print in sequence") {
         "wait 1000",
         "print board"
     };
-    runCommands(commands, st);
+    ScriptRunner::run(commands, st);
 
     std::cout.rdbuf(old);
 

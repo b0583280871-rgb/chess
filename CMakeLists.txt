@@ -12,8 +12,8 @@ add_executable(chess_game
     realtime/RealTimeArbiter.cpp
     input/BoardMapper.cpp
     input/Controller.cpp
-    engine/Engine.cpp
     engine/GameEngine.cpp
+    texttests/ScriptRunner.cpp
     io/BoardParser.cpp
     io/BoardPrinter.cpp
 )
@@ -36,8 +36,8 @@ if(BUILD_TESTS)
         realtime/RealTimeArbiter.cpp
         input/BoardMapper.cpp
         input/Controller.cpp
-        engine/Engine.cpp
         engine/GameEngine.cpp
+        texttests/ScriptRunner.cpp
         io/BoardParser.cpp
         io/BoardPrinter.cpp
     )
