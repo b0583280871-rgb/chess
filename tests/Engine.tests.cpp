@@ -11,7 +11,6 @@ namespace {
     GameState makeState(const std::vector<std::string>& boardLines) {
         GameState st;
         st.board = parseBoard(boardLines);
-        st.selections.assign(2, Selection{});
         return st;
     }
 }
@@ -96,122 +95,104 @@ TEST_CASE("resolveMoves settles multiple due moves in arrival order") {
 
 TEST_CASE("sendMove clears the source and queues an active move for a legal move") {
     GameState st = makeState({"wR . . .", ". . . .", ". . . .", ". . . ."});
-    st.selections[0] = {true, 0, 0, 0};
+    st.selection = {true, 0, 0, 0};
 
-    sendMove(st, 0, 0, 3);
+    sendMove(st, 0, 3);
 
     CHECK(st.board.grid[0][0] == ".");
     REQUIRE(st.activeMoves.size() == 1);
     CHECK(st.activeMoves[0].piece == "wR");
     CHECK(st.activeMoves[0].toCol == 3);
-    CHECK_FALSE(st.selections[0].active);
+    CHECK_FALSE(st.selection.active);
 }
 
 TEST_CASE("sendMove ignores an illegal move and leaves the board untouched") {
     GameState st = makeState({"wR . . .", ". . . .", ". . . .", ". . . ."});
-    st.selections[0] = {true, 0, 0, 0};
+    st.selection = {true, 0, 0, 0};
 
-    sendMove(st, 0, 1, 1); // diagonal - illegal for a rook
+    sendMove(st, 1, 1); // diagonal - illegal for a rook
 
     CHECK(st.board.grid[0][0] == "wR");
     CHECK(st.activeMoves.empty());
-    CHECK_FALSE(st.selections[0].active);
+    CHECK_FALSE(st.selection.active);
 }
 
 TEST_CASE("sendMove computes duration from piece speed and travel distance") {
     GameState st = makeState({"wQ . . .", ". . . .", ". . . .", ". . . ."});
-    st.selections[0] = {true, 0, 0, 0};
+    st.selection = {true, 0, 0, 0};
 
-    sendMove(st, 0, 0, 3); // queen: 4 cells/sec, 3 cells travelled
+    sendMove(st, 0, 3); // queen: 4 cells/sec, 3 cells travelled
 
     REQUIRE(st.activeMoves.size() == 1);
     CHECK(st.activeMoves[0].durationMs == 750);
 }
 
-TEST_CASE("handleClick opens a fresh selection when the claimed player clicks their own idle piece") {
+TEST_CASE("handleClick opens a fresh selection when clicking an idle piece") {
     GameState st = makeState({"wK . . .", ". . . .", ". . . .", ". . . ."});
 
-    handleClick(st, 0, 5, 5); // player 0 (white), inside cell (0,0)
+    handleClick(st, 5, 5); // inside cell (0,0)
 
-    CHECK(st.selections[0].active);
-    CHECK(st.selections[0].row == 0);
-    CHECK(st.selections[0].col == 0);
+    CHECK(st.selection.active);
+    CHECK(st.selection.row == 0);
+    CHECK(st.selection.col == 0);
 }
 
-TEST_CASE("handleClick rejects a claimed player that does not own the clicked piece") {
-    GameState st = makeState({"wK . . .", ". . . .", ". . . .", ". . . ."});
-
-    handleClick(st, 1, 5, 5); // player 1 (black) claims a white piece
-
-    CHECK_FALSE(st.selections[1].active);
-}
-
-TEST_CASE("handleClick reselects when the pending player clicks another piece of their own") {
+TEST_CASE("handleClick reselects when clicking another piece of the same color") {
     GameState st = makeState({"wK . wQ .", ". . . .", ". . . .", ". . . ."});
-    st.selections[0] = {true, 0, 0, 0};
+    st.selection = {true, 0, 0, 0};
 
-    handleClick(st, 0, 205, 5); // player 0 clicks cell (0,2), also white
+    handleClick(st, 205, 5); // cell (0,2), also white
 
-    CHECK(st.selections[0].active);
-    CHECK(st.selections[0].col == 2);
+    CHECK(st.selection.active);
+    CHECK(st.selection.col == 2);
 }
 
-TEST_CASE("handleClick completes the player's own pending selection when clicking an empty cell") {
+TEST_CASE("handleClick completes a pending selection when clicking an empty cell") {
     GameState st = makeState({"wR . . .", ". . . .", ". . . .", ". . . ."});
-    st.selections[0] = {true, 0, 0, 0};
+    st.selection = {true, 0, 0, 0};
 
-    handleClick(st, 0, 305, 5); // player 0 clicks empty cell (0,3)
+    handleClick(st, 305, 5); // empty cell (0,3)
 
     CHECK(st.board.grid[0][0] == ".");
     REQUIRE(st.activeMoves.size() == 1);
     CHECK(st.activeMoves[0].toCol == 3);
 }
 
-TEST_CASE("handleClick completes the player's own pending selection as a capture on an enemy cell") {
+TEST_CASE("handleClick completes a pending selection as a capture on an enemy cell") {
     GameState st = makeState({"wR . . bP", ". . . .", ". . . .", ". . . ."});
-    st.selections[0] = {true, 0, 0, 0};
+    st.selection = {true, 0, 0, 0};
 
-    handleClick(st, 0, 305, 5); // player 0 clicks the black pawn at (0,3)
+    handleClick(st, 305, 5); // the black pawn at (0,3)
 
     CHECK(st.board.grid[0][0] == ".");
     REQUIRE(st.activeMoves.size() == 1);
     CHECK(st.activeMoves[0].toCol == 3);
-    CHECK_FALSE(st.selections[1].active);
+    CHECK_FALSE(st.selection.active);
 }
 
-TEST_CASE("handleClick does nothing when a player with no pending selection clicks the opponent's piece") {
+TEST_CASE("handleClick with no pending selection opens a selection regardless of piece color") {
     GameState st = makeState({"wR . . bP", ". . . .", ". . . .", ". . . ."});
 
-    handleClick(st, 0, 305, 5); // player 0 clicks black's pawn, nobody is pending
+    handleClick(st, 305, 5); // black's pawn, nobody is pending
 
     CHECK(st.board.grid[0][3] == "bP");
     CHECK(st.activeMoves.empty());
-    CHECK_FALSE(st.selections[0].active);
-    CHECK_FALSE(st.selections[1].active);
+    CHECK(st.selection.active);
+    CHECK(st.selection.col == 3);
 }
 
 TEST_CASE("handleClick ignores clicks outside the board") {
     GameState st = makeState({"wK ."});
-    handleClick(st, 0, -5, -5);
-    handleClick(st, 0, 10000, 10000);
+    handleClick(st, -5, -5);
+    handleClick(st, 10000, 10000);
 
-    CHECK_FALSE(st.selections[0].active);
-    CHECK_FALSE(st.selections[1].active);
-}
-
-TEST_CASE("handleClick ignores an out-of-range player index") {
-    GameState st = makeState({"wK ."});
-    handleClick(st, 5, 5, 5);
-    handleClick(st, -1, 5, 5);
-    CHECK_FALSE(st.selections[0].active);
-    CHECK_FALSE(st.selections[1].active);
+    CHECK_FALSE(st.selection.active);
 }
 
 TEST_CASE("handleClick on an empty cell with no pending selection is a no-op") {
     GameState st = makeState({". . .", ". . .", ". . ."});
-    handleClick(st, 0, 5, 5);
-    CHECK_FALSE(st.selections[0].active);
-    CHECK_FALSE(st.selections[1].active);
+    handleClick(st, 5, 5);
+    CHECK_FALSE(st.selection.active);
 }
 
 TEST_CASE("handleWait advances the clock and resolves due moves") {
@@ -234,8 +215,8 @@ TEST_CASE("runCommands executes click, wait and print in sequence") {
     std::streambuf* old = std::cout.rdbuf(captured.rdbuf());
 
     std::vector<std::string> commands = {
-        "click 0 5 5",
-        "click 0 305 5",
+        "click 5 5",
+        "click 305 5",
         "wait 1000",
         "print board"
     };

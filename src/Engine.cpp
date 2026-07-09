@@ -38,8 +38,8 @@ void resolveMoves(GameState& st) {
     st.activeMoves = stillMoving;
 }
 
-void sendMove(GameState& st, int player, int toRow, int toCol) {
-    Selection& sel = st.selections[player];
+void sendMove(GameState& st, int toRow, int toCol) {
+    Selection& sel = st.selection;
     const std::string selected = st.board.grid[sel.row][sel.col];
 
     PieceMove m;
@@ -60,8 +60,7 @@ void sendMove(GameState& st, int player, int toRow, int toCol) {
     sel = Selection{};
 }
 
-void handleClick(GameState& st, int player, int x, int y) {
-    if (player < 0 || player >= (int)st.selections.size()) return;
+void handleClick(GameState& st, int x, int y) {
     if (x < 0 || y < 0) return;
 
     int col = x / config::CELL_SIZE;
@@ -72,19 +71,20 @@ void handleClick(GameState& st, int player, int x, int y) {
         return;
 
     const std::string& token = st.board.grid[row][col];
-    bool ownPiece = !isEmpty(token) && playerIndexOf(colorOf(token)) == player;
 
-    if (st.selections[player].active) {
-        if (ownPiece) {
-            st.selections[player] = {true, row, col, st.elapsedMs};   // reselect
+    if (st.selection.active) {
+        const std::string& selectedTok = st.board.grid[st.selection.row][st.selection.col];
+        bool sameSide = !isEmpty(token) && colorOf(token) == colorOf(selectedTok);
+        if (sameSide) {
+            st.selection = {true, row, col, st.elapsedMs};   // reselect
         } else {
-            sendMove(st, player, row, col);                           // complete: move or capture
+            sendMove(st, row, col);                           // complete: move or capture
         }
         return;
     }
 
-    if (ownPiece) {
-        st.selections[player] = {true, row, col, st.elapsedMs};       // open a fresh selection
+    if (!isEmpty(token)) {
+        st.selection = {true, row, col, st.elapsedMs};       // open a fresh selection
     }
 }
 
@@ -99,34 +99,10 @@ void runCommands(const std::vector<std::string>& commands, GameState& st) {
         std::string verb;
         ss >> verb;
 
-        //יש כאן איזשהוא עיקוף מיותר שצריך להוריד אותו, כי אפשר פשוט לקרוא ל 
-        //handleClick עם שלושה פרמטרים, אבל אני לא רוצה לשנות את זה עכשיו
-
         if (verb == "click") {
-            std::vector<int> nums;
-            int v;
-            while (ss >> v) nums.push_back(v);
-
-            if (nums.size() == 3) {
-                handleClick(st, nums[0], nums[1], nums[2]);
-            } else if (nums.size() == 2) {
-                // legacy "click x y" (no player arg): infer the player.
-                int x = nums[0], y = nums[1];
-                int player = -1;
-                for (size_t p = 0; p < st.selections.size(); ++p) {
-                    if (st.selections[p].active) { player = (int)p; break; }
-                }
-                if (player < 0) {
-                    int col = x / config::CELL_SIZE;
-                    int row = y / config::CELL_SIZE;
-                    if (row >= 0 && row < st.board.rows() &&
-                        col >= 0 && col < st.board.cols()) {
-                        const std::string& token = st.board.grid[row][col];
-                        if (!isEmpty(token)) player = playerIndexOf(colorOf(token));
-                    }
-                }
-                if (player >= 0) handleClick(st, player, x, y);
-            }
+            int x, y;
+            ss >> x >> y;
+            handleClick(st, x, y);
         } else if (verb == "wait") {
             long ms; ss >> ms;
             handleWait(st, ms);

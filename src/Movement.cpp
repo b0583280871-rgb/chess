@@ -4,14 +4,6 @@
 
 #include "config.hpp"
 
-int playerIndexOf(char color) {
-    switch (color) {
-        case 'w': return 0;
-        case 'b': return 1;
-        default:  return -1;
-    }
-}
-
 double cellDistance(int r1, int c1, int r2, int c2) {
     double dr = r2 - r1, dc = c2 - c1;
     return std::sqrt(dr * dr + dc * dc);

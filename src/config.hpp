@@ -8,8 +8,6 @@ namespace config {
 
     constexpr int CELL_SIZE = 100;
 
-    constexpr int NUM_PLAYERS = 2;
-
     struct PieceStats {
         double speedCellsPerSec;
         long   restMs;

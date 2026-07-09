@@ -15,12 +15,6 @@ namespace {
     }
 }
 
-TEST_CASE("playerIndexOf maps colors to indices") {
-    CHECK(playerIndexOf('w') == 0);
-    CHECK(playerIndexOf('b') == 1);
-    CHECK(playerIndexOf('x') == -1);
-}
-
 TEST_CASE("cellDistance computes euclidean distance in cells") {
     CHECK(cellDistance(0, 0, 3, 4) == doctest::Approx(5.0));
     CHECK(cellDistance(2, 2, 2, 2) == doctest::Approx(0.0));
