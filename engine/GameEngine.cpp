@@ -10,6 +10,11 @@
 void sendMove(GameState& st, int toRow, int toCol) {
     Selection& sel = st.selection;
 
+    if (st.arbiter.hasActiveMotion()) {
+        sel = Selection{};
+        return;
+    }
+
     std::optional<Piece> movingPiece = st.board.pieceAt(sel.cell);
     if (!movingPiece) {
         sel = Selection{};
@@ -30,12 +35,12 @@ void sendMove(GameState& st, int toRow, int toCol) {
     m.durationMs = (speed > 0.0) ? (long)(dist / speed * 1000.0) : 0;
 
     if (isLegalMove(st.board, m, piece)) {
-        st.activeMoves.push_back(m);
+        st.arbiter.startMotion(m);
     }
     sel = Selection{};
 }
 
 void handleWait(GameState& st, long ms) {
     st.elapsedMs += ms;
-    resolveMoves(st);
+    st.arbiter.advanceTime(st.elapsedMs, st.board);
 }
