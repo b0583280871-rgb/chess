@@ -29,11 +29,6 @@ void sendMove(GameState& st, int toRow, int toCol) {
     double dist  = cellDistance(m.from, m.to);
     m.durationMs = (speed > 0.0) ? (long)(dist / speed * 1000.0) : 0;
 
-    // NOTE: the source cell is deliberately NOT cleared here. Board now owns
-    // when a piece's position actually changes - only movePiece (called by
-    // RealTimeArbiter at confirmed arrival) may relocate a piece. This fixes
-    // the previous bug where a moving piece disappeared from the board
-    // mid-flight instead of staying at its source until arrival.
     if (isLegalMove(st.board, m, piece)) {
         st.activeMoves.push_back(m);
     }
