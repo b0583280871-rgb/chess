@@ -16,7 +16,8 @@ void sendMove(GameState& st, int toRow, int toCol) {
     m.piece   = selected;
 
     char piece = pieceOf(selected);
-    double speed = config::statsFor(piece).speedCellsPerSec;
+    Kind kind = kindFromChar(piece);
+    double speed = config::statsFor(kind).speedCellsPerSec;
     double dist  = cellDistance(m.from, m.to);
     m.durationMs = (speed > 0.0) ? (long)(dist / speed * 1000.0) : 0;
 

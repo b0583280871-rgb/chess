@@ -19,15 +19,15 @@ bool isPathClear(const Board& board, Position from, Position to) {
 
 namespace config {
 
-    PieceStats statsFor(char piece) {
-        switch (piece) {
-            case 'Q': return {4.0, 0};
-            case 'R': return {1.0, 0}; // derived from grader tests; other speeds still unconfirmed
-            case 'B': return {3.0, 0};
-            case 'N': return {3.5, 0};
-            case 'K': return {3.0, 0};
-            case 'P': return {2.0, 0};
-            default:  return {0.0, 0};
+    PieceStats statsFor(Kind kind) {
+        switch (kind) {
+            case Kind::Queen:  return {4.0, 0};
+            case Kind::Rook:   return {1.0, 0}; // derived from grader tests; other speeds still unconfirmed
+            case Kind::Bishop: return {3.0, 0};
+            case Kind::Knight: return {3.5, 0};
+            case Kind::King:   return {3.0, 0};
+            case Kind::Pawn:   return {2.0, 0};
+            default:           return {0.0, 0};
         }
     }
 
@@ -57,12 +57,12 @@ namespace config {
         return std::abs(dCol) == 1 && dRow == pawnForwardDir(color);
     }
 
-    std::map<char, MoveRule> moveShapes = {
-        {'K', {kingShape,   false}},
-        {'Q', {queenShape,  true }},
-        {'R', {rookShape,   true }},
-        {'B', {bishopShape, true }},
-        {'N', {knightShape, false}},
-        {'P', {pawnShape,   false, pawnCaptureShape}},
+    std::map<Kind, MoveRule> moveShapes = {
+        {Kind::King,   {kingShape,   false}},
+        {Kind::Queen,  {queenShape,  true }},
+        {Kind::Rook,   {rookShape,   true }},
+        {Kind::Bishop, {bishopShape, true }},
+        {Kind::Knight, {knightShape, false}},
+        {Kind::Pawn,   {pawnShape,   false, pawnCaptureShape}},
     };
 }

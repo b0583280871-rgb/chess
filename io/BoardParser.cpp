@@ -1,5 +1,6 @@
 #include "io/BoardParser.hpp"
 #include "io/BoardFormat.hpp"
+#include "model/Piece.hpp"
 #include <cctype>
 #include <sstream>
 
@@ -47,11 +48,7 @@ bool isValidToken(const std::string& t) {
     if (t == ".") return true;
     if (t.size() != 2) return false;
     if (t[0] != 'w' && t[0] != 'b') return false;
-    switch (t[1]) {
-        case 'K': case 'Q': case 'R':
-        case 'B': case 'N': case 'P': return true;
-        default: return false;
-    }
+    return isValidKindChar(t[1]);
 }
 
 void validateBoard(const Board& b) {

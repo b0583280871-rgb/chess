@@ -4,6 +4,7 @@
 #include "rules/RuleEngine.hpp"
 #include "model/Board.hpp"
 #include "model/GameState.hpp"
+#include "model/Piece.hpp"
 #include "io/BoardParser.hpp"
 
 namespace {
@@ -111,7 +112,7 @@ TEST_CASE("isLegalMove: a piece may never capture its own color") {
     CHECK_FALSE(isLegalMove(b, makeMove(0, 0, 0, 1, "wR"), 'R'));
 }
 
-TEST_CASE("isLegalMove: pieces with no registered shape are unrestricted") {
+TEST_CASE("isLegalMove: an invalid piece char throws PieceError") {
     Board b = parseBoard({"wX . . .", ". . . .", ". . . .", ". . . ."});
-    CHECK(isLegalMove(b, makeMove(0, 0, 3, 1, "wX"), 'X'));
+    CHECK_THROWS_AS(isLegalMove(b, makeMove(0, 0, 3, 1, "wX"), 'X'), PieceError);
 }

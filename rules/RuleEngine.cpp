@@ -3,7 +3,8 @@
 #include "rules/PieceRules.hpp"
 
 bool isLegalMove(const Board& board, const PieceMove& move, char piece) {
-    auto it = config::moveShapes.find(piece);
+    Kind kind = kindFromChar(piece);
+    auto it = config::moveShapes.find(kind);
     if (it == config::moveShapes.end()) return true;   // no rule registered yet -> unrestricted for now
 
     const config::MoveRule& rule = it->second;

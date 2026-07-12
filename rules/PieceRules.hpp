@@ -4,6 +4,7 @@
 #include <map>
 
 #include "model/Board.hpp"
+#include "model/Piece.hpp"
 #include "model/Position.hpp"
 
 int sign(int v);
@@ -17,7 +18,7 @@ namespace config {
         long   restMs;
     };
 
-    PieceStats statsFor(char piece);
+    PieceStats statsFor(Kind kind);
 
     using MoveShapeFn = std::function<bool(int dRow, int dCol, char color)>;
 
@@ -36,5 +37,5 @@ namespace config {
         MoveShapeFn captureShape = nullptr;
     };
 
-    extern std::map<char, MoveRule> moveShapes;
+    extern std::map<Kind, MoveRule> moveShapes;
 }

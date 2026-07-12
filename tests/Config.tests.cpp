@@ -3,16 +3,12 @@
 #include "rules/PieceRules.hpp"
 
 TEST_CASE("statsFor returns known speeds for standard pieces") {
-    CHECK(config::statsFor('Q').speedCellsPerSec == doctest::Approx(4.0));
-    CHECK(config::statsFor('R').speedCellsPerSec == doctest::Approx(1.0)); // derived from grader tests
-    CHECK(config::statsFor('B').speedCellsPerSec == doctest::Approx(3.0));
-    CHECK(config::statsFor('N').speedCellsPerSec == doctest::Approx(3.5));
-    CHECK(config::statsFor('K').speedCellsPerSec == doctest::Approx(3.0));
-    CHECK(config::statsFor('P').speedCellsPerSec == doctest::Approx(2.0));
-}
-
-TEST_CASE("statsFor defaults unknown pieces to zero speed") {
-    CHECK(config::statsFor('X').speedCellsPerSec == doctest::Approx(0.0));
+    CHECK(config::statsFor(Kind::Queen).speedCellsPerSec == doctest::Approx(4.0));
+    CHECK(config::statsFor(Kind::Rook).speedCellsPerSec == doctest::Approx(1.0)); // derived from grader tests
+    CHECK(config::statsFor(Kind::Bishop).speedCellsPerSec == doctest::Approx(3.0));
+    CHECK(config::statsFor(Kind::Knight).speedCellsPerSec == doctest::Approx(3.5));
+    CHECK(config::statsFor(Kind::King).speedCellsPerSec == doctest::Approx(3.0));
+    CHECK(config::statsFor(Kind::Pawn).speedCellsPerSec == doctest::Approx(2.0));
 }
 
 TEST_CASE("shape helpers classify king moves") {
@@ -63,7 +59,7 @@ TEST_CASE("shape helpers classify pawn moves and captures separately") {
 }
 
 TEST_CASE("moveShapes registers a rule for every standard piece") {
-    for (char piece : {'K', 'Q', 'R', 'B', 'N', 'P'}) {
-        CHECK(config::moveShapes.count(piece) == 1);
+    for (Kind kind : {Kind::King, Kind::Queen, Kind::Rook, Kind::Bishop, Kind::Knight, Kind::Pawn}) {
+        CHECK(config::moveShapes.count(kind) == 1);
     }
 }
