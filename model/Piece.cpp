@@ -35,13 +35,19 @@ char charFromKind(Kind k) {
 }
 
 char colorToChar(Color c) {
-    return (c == Color::White) ? 'w' : 'b';
+    return (c == Color::White) ? COLOR_WHITE_CHAR : COLOR_BLACK_CHAR;
+}
+
+Color colorFromChar(char c) {
+    if (c == COLOR_WHITE_CHAR) return Color::White;
+    if (c == COLOR_BLACK_CHAR) return Color::Black;
+    throw PieceError("INVALID_PIECE_TOKEN");
 }
 
 namespace {
     bool isValidPieceToken(const std::string& token) {
         if (token.size() != 2) return false;
-        if (token[0] != 'w' && token[0] != 'b') return false;
+        if (token[0] != COLOR_WHITE_CHAR && token[0] != COLOR_BLACK_CHAR) return false;
         return isValidKindChar(token[1]);
     }
 }
@@ -51,7 +57,7 @@ Piece pieceFromToken(const std::string& token, Position at, int id) {
 
     Piece piece;
     piece.id    = id;
-    piece.color = (colorOf(token) == 'w') ? Color::White : Color::Black;
+    piece.color = colorFromChar(colorOf(token));
     piece.kind  = kindFromChar(pieceOf(token));
     piece.cell  = at;
     piece.state = PieceState::Idle;

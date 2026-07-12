@@ -34,6 +34,12 @@ char charFromKind(Kind k);
 
 char colorToChar(Color c);
 
+Color colorFromChar(char c);
+
+inline const std::string EMPTY_TOKEN = ".";
+inline constexpr char COLOR_WHITE_CHAR = 'w';
+inline constexpr char COLOR_BLACK_CHAR = 'b';
+
 Piece pieceFromToken(const std::string& token, Position at, int id);
 
 std::string tokenFromPiece(const Piece& piece);

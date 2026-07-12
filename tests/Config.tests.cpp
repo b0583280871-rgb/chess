@@ -46,8 +46,8 @@ TEST_CASE("shape helpers classify knight moves") {
 }
 
 TEST_CASE("pawnForwardDir depends on color") {
-    CHECK(config::pawnForwardDir('w') == -1);
-    CHECK(config::pawnForwardDir('b') == 1);
+    CHECK(config::pawnForwardDir(COLOR_WHITE_CHAR) == -1);
+    CHECK(config::pawnForwardDir(COLOR_BLACK_CHAR) == 1);
 }
 
 TEST_CASE("shape helpers classify pawn moves and captures separately") {

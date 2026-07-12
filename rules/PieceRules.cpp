@@ -48,7 +48,7 @@ namespace config {
         return (r == 1 && c == 2) || (r == 2 && c == 1);
     }
     int pawnForwardDir(char color) {
-        return (color == 'w') ? -1 : 1;
+        return (color == COLOR_WHITE_CHAR) ? -1 : 1;
     }
     bool pawnShape(int dRow, int dCol, char color) {
         return dCol == 0 && dRow == pawnForwardDir(color);

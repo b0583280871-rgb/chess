@@ -22,7 +22,7 @@ namespace {
 
     std::string tokenAt(const Board& b, Position pos) {
         auto piece = b.pieceAt(pos);
-        return piece ? tokenFromPiece(*piece) : ".";
+        return piece ? tokenFromPiece(*piece) : EMPTY_TOKEN;
     }
 }
 
@@ -36,7 +36,7 @@ TEST_CASE("resolveMoves keeps a move active before its arrival time") {
     resolveMoves(st);
 
     REQUIRE(st.activeMoves.size() == 1);
-    CHECK(tokenAt(st.board, {0, 3}) == ".");
+    CHECK(tokenAt(st.board, {0, 3}) == EMPTY_TOKEN);
 }
 
 TEST_CASE("resolveMoves lands a move onto an empty target once due") {

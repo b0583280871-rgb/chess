@@ -139,10 +139,10 @@ TEST_CASE("formatBoard round trips with parseBoard") {
 }
 
 TEST_CASE("isEmpty/colorOf/pieceOf read a single token") {
-    CHECK(isEmpty("."));
+    CHECK(isEmpty(EMPTY_TOKEN));
     CHECK_FALSE(isEmpty("wK"));
-    CHECK(colorOf("wK") == 'w');
-    CHECK(colorOf("bQ") == 'b');
+    CHECK(colorOf("wK") == COLOR_WHITE_CHAR);
+    CHECK(colorOf("bQ") == COLOR_BLACK_CHAR);
     CHECK(pieceOf("wK") == 'K');
     CHECK(pieceOf("bP") == 'P');
 }

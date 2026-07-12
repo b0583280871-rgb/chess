@@ -52,7 +52,7 @@ Board parseBoard(const std::vector<std::string>& boardLines) {
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < cols; ++c) {
             const std::string& tok = rawGrid[r][c];
-            if (tok != ".") {
+            if (tok != EMPTY_TOKEN) {
                 board.addPiece(pieceFromToken(tok, Position{r, c}, nextId));
                 ++nextId;
             }
@@ -62,9 +62,9 @@ Board parseBoard(const std::vector<std::string>& boardLines) {
 }
 
 bool isValidToken(const std::string& t) {
-    if (t == ".") return true;
+    if (t == EMPTY_TOKEN) return true;
     if (t.size() != 2) return false;
-    if (t[0] != 'w' && t[0] != 'b') return false;
+    if (t[0] != COLOR_WHITE_CHAR && t[0] != COLOR_BLACK_CHAR) return false;
     return isValidKindChar(t[1]);
 }
 

@@ -10,7 +10,7 @@ std::string formatBoard(const Board& b) {
         for (int c = 0; c < b.cols(); ++c) {
             if (c) out << ' ';
             auto piece = b.pieceAt(Position{r, c});
-            out << (piece ? tokenFromPiece(*piece) : ".");
+            out << (piece ? tokenFromPiece(*piece) : EMPTY_TOKEN);
         }
         out << '\n';
     }

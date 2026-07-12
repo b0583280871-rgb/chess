@@ -42,6 +42,6 @@ void Board::movePiece(Position from, Position to) {
     src.reset();
 }
 
-bool isEmpty(const std::string& tok) { return tok == "."; }
+bool isEmpty(const std::string& tok) { return tok == EMPTY_TOKEN; }
 char colorOf(const std::string& tok) { return tok[0]; }
 char pieceOf(const std::string& tok) { return tok[1]; }
