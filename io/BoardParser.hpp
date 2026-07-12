@@ -30,4 +30,4 @@ Board parseBoard(const std::vector<std::string>& boardLines);
 
 bool isValidToken(const std::string& t);
 
-void validateBoard(const Board& b);
+void validateBoard(const std::vector<std::vector<std::string>>& rawGrid);

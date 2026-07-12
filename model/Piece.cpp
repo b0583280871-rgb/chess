@@ -34,6 +34,10 @@ char charFromKind(Kind k) {
     throw PieceError("INVALID_PIECE_TOKEN");
 }
 
+char colorToChar(Color c) {
+    return (c == Color::White) ? 'w' : 'b';
+}
+
 namespace {
     bool isValidPieceToken(const std::string& token) {
         if (token.size() != 2) return false;
@@ -56,7 +60,7 @@ Piece pieceFromToken(const std::string& token, Position at, int id) {
 
 std::string tokenFromPiece(const Piece& piece) {
     std::string token(2, '?');
-    token[0] = (piece.color == Color::White) ? 'w' : 'b';
+    token[0] = colorToChar(piece.color);
     token[1] = charFromKind(piece.kind);
     return token;
 }

@@ -6,6 +6,7 @@
 #include "realtime/RealTimeArbiter.hpp"
 #include "model/Board.hpp"
 #include "model/GameState.hpp"
+#include "model/Piece.hpp"
 #include "io/BoardParser.hpp"
 #include "io/BoardPrinter.hpp"
 
@@ -17,6 +18,11 @@ namespace {
         GameState st;
         st.board = parseBoard(boardLines);
         return st;
+    }
+
+    std::string tokenAt(const Board& b, Position pos) {
+        auto piece = b.pieceAt(pos);
+        return piece ? tokenFromPiece(*piece) : ".";
     }
 }
 
@@ -30,7 +36,7 @@ TEST_CASE("resolveMoves keeps a move active before its arrival time") {
     resolveMoves(st);
 
     REQUIRE(st.activeMoves.size() == 1);
-    CHECK(st.board.grid[0][3] == ".");
+    CHECK(tokenAt(st.board, {0, 3}) == ".");
 }
 
 TEST_CASE("resolveMoves lands a move onto an empty target once due") {
@@ -43,7 +49,7 @@ TEST_CASE("resolveMoves lands a move onto an empty target once due") {
     resolveMoves(st);
 
     CHECK(st.activeMoves.empty());
-    CHECK(st.board.grid[0][3] == "wR");
+    CHECK(tokenAt(st.board, {0, 3}) == "wR");
 }
 
 TEST_CASE("resolveMoves captures an enemy occupying the target") {
@@ -55,11 +61,17 @@ TEST_CASE("resolveMoves captures an enemy occupying the target") {
 
     resolveMoves(st);
 
-    CHECK(st.board.grid[0][3] == "wR");
+    CHECK(tokenAt(st.board, {0, 3}) == "wR");
 }
 
-TEST_CASE("resolveMoves bounces a piece home when the target turned friendly and the source is free") {
-    GameState st = makeState({". . . wP"});
+TEST_CASE("resolveMoves leaves a piece at its source when the target turned friendly") {
+    // Corrected version of the old "bounces a piece home" test: with the
+    // mid-flight-disappearance bug fixed, the source piece was never removed
+    // in the first place, so there is nothing to "restore" - it simply
+    // never left. The board fixture below reflects that reality (the wR is
+    // actually still sitting at its source), instead of the old fixture that
+    // simulated the bug by starting with an empty source.
+    GameState st = makeState({"wR . . wP"});
     PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 500; m.piece = "wR";
     st.activeMoves.push_back(m);
@@ -67,8 +79,8 @@ TEST_CASE("resolveMoves bounces a piece home when the target turned friendly and
 
     resolveMoves(st);
 
-    CHECK(st.board.grid[0][0] == "wR");
-    CHECK(st.board.grid[0][3] == "wP");
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");
+    CHECK(tokenAt(st.board, {0, 3}) == "wP");
 }
 
 TEST_CASE("resolveMoves loses a piece when the target turned friendly and the source is occupied") {
@@ -80,12 +92,16 @@ TEST_CASE("resolveMoves loses a piece when the target turned friendly and the so
 
     resolveMoves(st);
 
-    CHECK(st.board.grid[0][0] == "wN");
-    CHECK(st.board.grid[0][3] == "wP");
+    CHECK(tokenAt(st.board, {0, 0}) == "wN");
+    CHECK(tokenAt(st.board, {0, 3}) == "wP");
 }
 
 TEST_CASE("resolveMoves settles multiple due moves in arrival order") {
-    GameState st = makeState({". . ."});
+    // Board fixture updated to actually contain the pieces at their move
+    // sources (wP at (0,0), bP at (0,2)) - resolveMoves now looks up real
+    // pieces via pieceAt instead of writing PieceMove.piece strings blindly,
+    // so a source with nothing there is simply skipped.
+    GameState st = makeState({"wP . bP"});
     PieceMove first; first.from = {0, 0}; first.to = {0, 1};
     first.startMs = 0; first.durationMs = 200; first.piece = "wP";
     PieceMove second; second.from = {0, 2}; second.to = {0, 1};
@@ -95,16 +111,19 @@ TEST_CASE("resolveMoves settles multiple due moves in arrival order") {
 
     resolveMoves(st);
 
-    CHECK(st.board.grid[0][1] == "wP");
+    CHECK(tokenAt(st.board, {0, 1}) == "wP");
 }
 
-TEST_CASE("sendMove clears the source and queues an active move for a legal move") {
+TEST_CASE("sendMove keeps the piece at its source and queues an active move for a legal move") {
+    // Renamed from "clears the source": with the mid-flight bug fixed,
+    // sendMove no longer clears the source cell - the piece stays there
+    // until RealTimeArbiter confirms arrival.
     GameState st = makeState({"wR . . .", ". . . .", ". . . .", ". . . ."});
     st.selection = {true, {0, 0}, 0};
 
     sendMove(st, 0, 3);
 
-    CHECK(st.board.grid[0][0] == ".");
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");
     REQUIRE(st.activeMoves.size() == 1);
     CHECK(st.activeMoves[0].piece == "wR");
     CHECK(st.activeMoves[0].to.col == 3);
@@ -117,7 +136,7 @@ TEST_CASE("sendMove ignores an illegal move and leaves the board untouched") {
 
     sendMove(st, 1, 1); // diagonal - illegal for a rook
 
-    CHECK(st.board.grid[0][0] == "wR");
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");
     CHECK(st.activeMoves.empty());
     CHECK_FALSE(st.selection.active);
 }
@@ -158,7 +177,7 @@ TEST_CASE("handleClick completes a pending selection when clicking an empty cell
 
     Controller::click(st, 305, 5); // empty cell (0,3)
 
-    CHECK(st.board.grid[0][0] == ".");
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");
     REQUIRE(st.activeMoves.size() == 1);
     CHECK(st.activeMoves[0].to.col == 3);
 }
@@ -169,7 +188,7 @@ TEST_CASE("handleClick completes a pending selection as a capture on an enemy ce
 
     Controller::click(st, 305, 5); // the black pawn at (0,3)
 
-    CHECK(st.board.grid[0][0] == ".");
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");
     REQUIRE(st.activeMoves.size() == 1);
     CHECK(st.activeMoves[0].to.col == 3);
     CHECK_FALSE(st.selection.active);
@@ -180,7 +199,7 @@ TEST_CASE("handleClick with no pending selection opens a selection regardless of
 
     Controller::click(st, 305, 5); // black's pawn, nobody is pending
 
-    CHECK(st.board.grid[0][3] == "bP");
+    CHECK(tokenAt(st.board, {0, 3}) == "bP");
     CHECK(st.activeMoves.empty());
     CHECK(st.selection.active);
     CHECK(st.selection.cell.col == 3);
@@ -192,6 +211,26 @@ TEST_CASE("handleClick ignores clicks outside the board") {
     Controller::click(st, 10000, 10000);
 
     CHECK_FALSE(st.selection.active);
+}
+
+TEST_CASE("handleClick cancels an active selection on an outside-board click") {
+    GameState st = makeState({"wR . . bN", ". . . .", ". . . .", ". . . ."});
+
+    Controller::click(st, 5, 5); // select the rook at (0,0)
+    REQUIRE(st.selection.active);
+
+    Controller::click(st, -5, -5); // outside the board -> must cancel the selection
+
+    CHECK_FALSE(st.selection.active);
+
+    // The next in-bounds click must open a fresh selection on the enemy
+    // knight, not be misread as completing a move from the stale selection.
+    Controller::click(st, 305, 5); // click on the black knight at (0,3)
+
+    CHECK(st.activeMoves.empty());
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");   // rook never moved
+    CHECK(st.selection.active);
+    CHECK(st.selection.cell.col == 3);          // freshly selected the knight, not a completed move
 }
 
 TEST_CASE("handleClick on an empty cell with no pending selection is a no-op") {
@@ -210,7 +249,7 @@ TEST_CASE("handleWait advances the clock and resolves due moves") {
 
     CHECK(st.elapsedMs == 150);
     CHECK(st.activeMoves.empty());
-    CHECK(st.board.grid[0][3] == "wR");
+    CHECK(tokenAt(st.board, {0, 3}) == "wR");
 }
 
 TEST_CASE("runCommands executes click, wait and print in sequence") {
@@ -222,7 +261,7 @@ TEST_CASE("runCommands executes click, wait and print in sequence") {
     std::vector<std::string> commands = {
         "click 5 5",
         "click 305 5",
-        "wait 1000",
+        "wait 3000", // rook: 1.0 cells/sec, 3 cells travelled -> 3000ms to arrive
         "print board"
     };
     ScriptRunner::run(commands, st);
@@ -230,5 +269,5 @@ TEST_CASE("runCommands executes click, wait and print in sequence") {
     std::cout.rdbuf(old);
 
     CHECK(captured.str() == formatBoard(st.board));
-    CHECK(st.board.grid[0][3] == "wR");
+    CHECK(tokenAt(st.board, {0, 3}) == "wR");
 }

@@ -1,5 +1,7 @@
 #include "engine/GameEngine.hpp"
 
+#include <optional>
+
 #include "model/Board.hpp"
 #include "rules/PieceRules.hpp"
 #include "rules/RuleEngine.hpp"
@@ -7,7 +9,13 @@
 
 void sendMove(GameState& st, int toRow, int toCol) {
     Selection& sel = st.selection;
-    const std::string selected = st.board.grid[sel.cell.row][sel.cell.col];
+
+    std::optional<Piece> movingPiece = st.board.pieceAt(sel.cell);
+    if (!movingPiece) {
+        sel = Selection{};
+        return;
+    }
+    const std::string selected = tokenFromPiece(*movingPiece);
 
     PieceMove m;
     m.from = sel.cell;
@@ -21,8 +29,12 @@ void sendMove(GameState& st, int toRow, int toCol) {
     double dist  = cellDistance(m.from, m.to);
     m.durationMs = (speed > 0.0) ? (long)(dist / speed * 1000.0) : 0;
 
+    // NOTE: the source cell is deliberately NOT cleared here. Board now owns
+    // when a piece's position actually changes - only movePiece (called by
+    // RealTimeArbiter at confirmed arrival) may relocate a piece. This fixes
+    // the previous bug where a moving piece disappeared from the board
+    // mid-flight instead of staying at its source until arrival.
     if (isLegalMove(st.board, m, piece)) {
-        st.board.grid[m.from.row][m.from.col] = ".";
         st.activeMoves.push_back(m);
     }
     sel = Selection{};

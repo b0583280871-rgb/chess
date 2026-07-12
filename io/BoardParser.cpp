@@ -39,9 +39,26 @@ Sections parseSections(const std::string& text) {
 }
 
 Board parseBoard(const std::vector<std::string>& boardLines) {
-    Board b;
-    for (const auto& line : boardLines) b.grid.push_back(splitWords(line));
-    return b;
+    std::vector<std::vector<std::string>> rawGrid;
+    for (const auto& line : boardLines) rawGrid.push_back(splitWords(line));
+
+    validateBoard(rawGrid);
+
+    int rows = (int)rawGrid.size();
+    int cols = rawGrid.empty() ? 0 : (int)rawGrid[0].size();
+    Board board(rows, cols);
+
+    int nextId = 1;
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < cols; ++c) {
+            const std::string& tok = rawGrid[r][c];
+            if (tok != ".") {
+                board.addPiece(pieceFromToken(tok, Position{r, c}, nextId));
+                ++nextId;
+            }
+        }
+    }
+    return board;
 }
 
 bool isValidToken(const std::string& t) {
@@ -51,14 +68,14 @@ bool isValidToken(const std::string& t) {
     return isValidKindChar(t[1]);
 }
 
-void validateBoard(const Board& b) {
-    if (b.grid.empty()) return;
+void validateBoard(const std::vector<std::vector<std::string>>& rawGrid) {
+    if (rawGrid.empty()) return;
 
-    size_t expected = b.grid[0].size();
-    for (const auto& row : b.grid)                 // structural check
+    size_t expected = rawGrid[0].size();
+    for (const auto& row : rawGrid)                 // structural check
         if (row.size() != expected) throw BoardError("ROW_WIDTH_MISMATCH");
 
-    for (const auto& row : b.grid)                 // token check
+    for (const auto& row : rawGrid)                 // token check
         for (const auto& tok : row)
             if (!isValidToken(tok)) throw BoardError("UNKNOWN_TOKEN");
 }

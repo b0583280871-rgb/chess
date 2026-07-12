@@ -16,7 +16,6 @@ int main() {
     try {
         Sections sections = parseSections(input);
         state.board = parseBoard(sections.boardLines);
-        validateBoard(state.board);
 
         ScriptRunner::run(sections.commandLines, state);
     } catch (const BoardError& e) {

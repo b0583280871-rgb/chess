@@ -1,6 +1,7 @@
 #include "doctest.h"
 
 #include "model/Board.hpp"
+#include "model/Piece.hpp"
 #include "io/BoardParser.hpp"
 #include "io/BoardPrinter.hpp"
 #include "rules/PieceRules.hpp"
@@ -54,21 +55,19 @@ TEST_CASE("parseSections tolerates leading whitespace before headers and blank l
     CHECK(s.commandLines[0] == "wait 50");
 }
 
-TEST_CASE("parseSections ignores lines before any header") {
+TEST_CASE("parseSections throws on lines before any header") {
     std::string text = "garbage\nBoard:\nwK .\n";
-    Sections s = parseSections(text);
-    REQUIRE(s.boardLines.size() == 1);
-    CHECK(s.boardLines[0] == "wK .");
+    CHECK_THROWS_AS(parseSections(text), BoardError);
 }
 
 TEST_CASE("parseBoard builds a grid of tokens from board lines") {
     Board b = parseBoard({"wR wN", "bR bN"});
     REQUIRE(b.rows() == 2);
     REQUIRE(b.cols() == 2);
-    CHECK(b.grid[0][0] == "wR");
-    CHECK(b.grid[0][1] == "wN");
-    CHECK(b.grid[1][0] == "bR");
-    CHECK(b.grid[1][1] == "bN");
+    CHECK(tokenFromPiece(*b.pieceAt({0, 0})) == "wR");
+    CHECK(tokenFromPiece(*b.pieceAt({0, 1})) == "wN");
+    CHECK(tokenFromPiece(*b.pieceAt({1, 0})) == "bR");
+    CHECK(tokenFromPiece(*b.pieceAt({1, 1})) == "bN");
 }
 
 TEST_CASE("Board::rows and Board::cols report grid dimensions") {
@@ -100,9 +99,9 @@ TEST_CASE("isValidToken rejects bad color, bad piece or bad length") {
 }
 
 TEST_CASE("validateBoard throws ROW_WIDTH_MISMATCH for inconsistent row widths") {
-    Board b = parseBoard({"wK wQ", "bK"});
+    std::vector<std::vector<std::string>> rawGrid = {{"wK", "wQ"}, {"bK"}};
     try {
-        validateBoard(b);
+        validateBoard(rawGrid);
         FAIL("expected BoardError");
     } catch (const BoardError& e) {
         CHECK(e.code() == "ROW_WIDTH_MISMATCH");
@@ -110,9 +109,9 @@ TEST_CASE("validateBoard throws ROW_WIDTH_MISMATCH for inconsistent row widths")
 }
 
 TEST_CASE("validateBoard throws UNKNOWN_TOKEN for invalid tokens") {
-    Board b = parseBoard({"wK xQ"});
+    std::vector<std::vector<std::string>> rawGrid = {{"wK", "xQ"}};
     try {
-        validateBoard(b);
+        validateBoard(rawGrid);
         FAIL("expected BoardError");
     } catch (const BoardError& e) {
         CHECK(e.code() == "UNKNOWN_TOKEN");
@@ -120,13 +119,13 @@ TEST_CASE("validateBoard throws UNKNOWN_TOKEN for invalid tokens") {
 }
 
 TEST_CASE("validateBoard accepts a well formed board") {
-    Board b = parseBoard({"wK wQ", "bK bQ"});
-    CHECK_NOTHROW(validateBoard(b));
+    std::vector<std::vector<std::string>> rawGrid = {{"wK", "wQ"}, {"bK", "bQ"}};
+    CHECK_NOTHROW(validateBoard(rawGrid));
 }
 
 TEST_CASE("validateBoard does nothing for an empty board") {
-    Board b;
-    CHECK_NOTHROW(validateBoard(b));
+    std::vector<std::vector<std::string>> rawGrid;
+    CHECK_NOTHROW(validateBoard(rawGrid));
 }
 
 TEST_CASE("formatBoard renders rows as space separated tokens with trailing newline") {

@@ -32,6 +32,8 @@ Kind kindFromChar(char c);
 
 char charFromKind(Kind k);
 
+char colorToChar(Color c);
+
 Piece pieceFromToken(const std::string& token, Position at, int id);
 
 std::string tokenFromPiece(const Piece& piece);

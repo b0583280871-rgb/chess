@@ -10,7 +10,7 @@ bool isPathClear(const Board& board, Position from, Position to) {
 
     int r = from.row + stepRow, c = from.col + stepCol;
     while (r != to.row || c != to.col) {
-        if (!isEmpty(board.grid[r][c])) return false;
+        if (!board.isEmpty(Position{r, c})) return false;
         r += stepRow;
         c += stepCol;
     }

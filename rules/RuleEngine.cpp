@@ -1,5 +1,7 @@
 #include "rules/RuleEngine.hpp"
 
+#include <optional>
+
 #include "rules/PieceRules.hpp"
 
 bool isLegalMove(const Board& board, const PieceMove& move, char piece) {
@@ -10,10 +12,10 @@ bool isLegalMove(const Board& board, const PieceMove& move, char piece) {
     const config::MoveRule& rule = it->second;
     char color = move.piece[0];
 
-    const std::string &destination = board.grid[move.to.row][move.to.col];
-    if (!isEmpty(destination) && colorOf(destination) == color) return false;
+    std::optional<Piece> destination = board.pieceAt(move.to);
+    if (destination && colorToChar(destination->color) == color) return false;
 
-    bool isCapture = !isEmpty(destination);
+    bool isCapture = destination.has_value();
     const config::MoveShapeFn& shape = (isCapture && rule.captureShape) ? rule.captureShape : rule.shape;
 
     int dRow = move.to.row - move.from.row;

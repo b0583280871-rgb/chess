@@ -1,5 +1,7 @@
 #include "input/Controller.hpp"
 
+#include <optional>
+
 #include "model/Board.hpp"
 #include "input/BoardMapper.hpp"
 #include "engine/GameEngine.hpp"
@@ -8,26 +10,29 @@ namespace Controller {
 
     void click(GameState& st, int x, int y) {
         auto cell = pixelToCell(x, y, st.board);
-        if (!cell) return;
+        if (!cell) {
+            if (st.selection.active) st.selection = Selection{};
+            return;
+        }
 
         int row = cell->row;
         int col = cell->col;
 
-        const std::string& token = st.board.grid[row][col];
+        std::optional<Piece> clicked = st.board.pieceAt(*cell);
 
         if (st.selection.active) {
-            const std::string& selectedTok = st.board.grid[st.selection.cell.row][st.selection.cell.col];
-            bool sameSide = !isEmpty(token) && colorOf(token) == colorOf(selectedTok);
+            std::optional<Piece> selected = st.board.pieceAt(st.selection.cell);
+            bool sameSide = clicked && selected && clicked->color == selected->color;
             if (sameSide) {
-                st.selection = {true, {row, col}, st.elapsedMs}; 
+                st.selection = {true, {row, col}, st.elapsedMs};   // reselect
             } else {
-                sendMove(st, row, col);                          
+                sendMove(st, row, col);                            // complete: move or capture
             }
             return;
         }
 
-        if (!isEmpty(token)) {
-            st.selection = {true, {row, col}, st.elapsedMs}; 
+        if (clicked) {
+            st.selection = {true, {row, col}, st.elapsedMs};       // open a fresh selection
         }
     }
 

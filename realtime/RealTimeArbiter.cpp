@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 #include "model/Board.hpp"
 
@@ -28,13 +29,18 @@ void resolveMoves(GameState& st) {
 
     for (size_t idx : due) {
         const PieceMove& m = st.activeMoves[idx];
-        std::string& target = st.board.grid[m.to.row][m.to.col];
-        if (isEmpty(target) || colorOf(target) != m.piece[0]) {
-            target = m.piece;
-        } else {
-            std::string& origin = st.board.grid[m.from.row][m.from.col];
-            if (isEmpty(origin)) origin = m.piece;
+
+        std::optional<Piece> movingPiece = st.board.pieceAt(m.from);
+        if (!movingPiece) continue;   // defensive: shouldn't normally happen
+
+        std::optional<Piece> destPiece = st.board.pieceAt(m.to);
+        if (!destPiece || destPiece->color != movingPiece->color) {
+            st.board.movePiece(m.from, m.to);
         }
+        // else: destination holds a friendly piece -> the move is blocked.
+        // No "restore to origin" is needed here: GameEngine no longer clears
+        // the source cell when the move is sent, so the piece was never
+        // removed from m.from in the first place - it simply stays put.
     }
 
     st.activeMoves = stillMoving;

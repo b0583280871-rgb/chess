@@ -2,12 +2,15 @@
 
 #include <sstream>
 
+#include "model/Piece.hpp"
+
 std::string formatBoard(const Board& b) {
     std::ostringstream out;
-    for (const auto& row : b.grid) {
-        for (size_t j = 0; j < row.size(); ++j) {
-            if (j) out << ' ';
-            out << row[j];
+    for (int r = 0; r < b.rows(); ++r) {
+        for (int c = 0; c < b.cols(); ++c) {
+            if (c) out << ' ';
+            auto piece = b.pieceAt(Position{r, c});
+            out << (piece ? tokenFromPiece(*piece) : ".");
         }
         out << '\n';
     }

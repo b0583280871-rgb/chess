@@ -113,6 +113,6 @@ TEST_CASE("isLegalMove: a piece may never capture its own color") {
 }
 
 TEST_CASE("isLegalMove: an invalid piece char throws PieceError") {
-    Board b = parseBoard({"wX . . .", ". . . .", ". . . .", ". . . ."});
+    Board b = parseBoard({". . . .", ". . . .", ". . . .", ". . . ."});
     CHECK_THROWS_AS(isLegalMove(b, makeMove(0, 0, 3, 1, "wX"), 'X'), PieceError);
 }
