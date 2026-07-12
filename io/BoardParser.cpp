@@ -1,5 +1,5 @@
 #include "io/BoardParser.hpp"
-
+#include "io/BoardFormat.hpp"
 #include <cctype>
 #include <sstream>
 
@@ -26,11 +26,13 @@ Sections parseSections(const std::string& text) {
 
     while (std::getline(stream, line)) {
         std::string t = trim(line);
-        if (t == "Board:")    { where = BOARD;    continue; }
-        if (t == "Commands:") { where = COMMANDS; continue; }
-        if (t.empty())        { continue; }
+        if (t == io_format::SECTION_BOARD)    { where = BOARD;    continue; }
+        if (t == io_format::SECTION_COMMANDS) { where = COMMANDS; continue; }
+        if (t.empty())                        { continue; }
+
         if (where == BOARD)         s.boardLines.push_back(t);
         else if (where == COMMANDS) s.commandLines.push_back(t);
+        else                        throw BoardError("UNRECOGNIZED_SECTION_LINE");
     }
     return s;
 }

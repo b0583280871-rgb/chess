@@ -11,18 +11,18 @@ int main() {
     std::string input, line;
     while (std::getline(std::cin, line)) input += line + '\n';
 
-    Sections sections = parseSections(input);
-
     GameState state;
-    state.board = parseBoard(sections.boardLines);
 
     try {
+        Sections sections = parseSections(input);
+        state.board = parseBoard(sections.boardLines);
         validateBoard(state.board);
+
+        ScriptRunner::run(sections.commandLines, state);
     } catch (const BoardError& e) {
         std::cout << "ERROR " << e.code() << '\n';
         return 0;
     }
 
-    ScriptRunner::run(sections.commandLines, state);
     return 0;
 }
