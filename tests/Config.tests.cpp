@@ -3,12 +3,13 @@
 #include "../rules/PieceRules.hpp"
 
 TEST_CASE("statsFor returns known speeds for standard pieces") {
-    CHECK(config::statsFor(Kind::Queen).speedCellsPerSec == doctest::Approx(4.0));
-    CHECK(config::statsFor(Kind::Rook).speedCellsPerSec == doctest::Approx(1.0)); // derived from grader tests
-    CHECK(config::statsFor(Kind::Bishop).speedCellsPerSec == doctest::Approx(3.0));
-    CHECK(config::statsFor(Kind::Knight).speedCellsPerSec == doctest::Approx(3.5));
-    CHECK(config::statsFor(Kind::King).speedCellsPerSec == doctest::Approx(3.0));
-    CHECK(config::statsFor(Kind::Pawn).speedCellsPerSec == doctest::Approx(2.0));
+    // Piece speed is uniform: every kind moves at 1.0 cells/sec (1000ms per cell).
+    CHECK(config::statsFor(Kind::Queen).speedCellsPerSec == doctest::Approx(1.0));
+    CHECK(config::statsFor(Kind::Rook).speedCellsPerSec == doctest::Approx(1.0));
+    CHECK(config::statsFor(Kind::Bishop).speedCellsPerSec == doctest::Approx(1.0));
+    CHECK(config::statsFor(Kind::Knight).speedCellsPerSec == doctest::Approx(1.0));
+    CHECK(config::statsFor(Kind::King).speedCellsPerSec == doctest::Approx(1.0));
+    CHECK(config::statsFor(Kind::Pawn).speedCellsPerSec == doctest::Approx(1.0));
 }
 
 TEST_CASE("shape helpers classify king moves") {

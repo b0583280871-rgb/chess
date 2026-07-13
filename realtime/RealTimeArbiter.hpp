@@ -32,17 +32,11 @@ public:
     ArrivalEvent advanceTime(long elapsedMs, Board& board);
 
     bool hasActiveJump() const;
-    bool isPieceCurrentlyMoving(Position pos) const;   // true if activeMove_ exists and its `from` equals pos
-    bool isPieceCurrentlyJumping(Position pos) const;  // true if activeJump_ exists and its cell equals pos
-    void startJump(Position cell, long startMs);       // throws RealTimeArbiterError if a jump is already active, or the piece is currently moving
+    bool isPieceCurrentlyMoving(Position pos) const;   
+    bool isPieceCurrentlyJumping(Position pos) const;  
+    void startJump(Position cell, long startMs);      
 
 private:
-    // PieceJump is a private implementation detail of RealTimeArbiter alone -
-    // nothing outside this class ever needs to name its type. It's declared
-    // as a private nested struct (rather than an anonymous-namespace type in
-    // the .cpp) because std::optional<PieceJump> as a member here requires a
-    // complete type visible at this point in the header; an anonymous
-    // namespace in RealTimeArbiter.cpp is invisible from this header entirely.
     struct PieceJump {
         Position cell;
         long     startMs;

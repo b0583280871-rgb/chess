@@ -8,6 +8,13 @@ build/
 *.lib
 *.o
 
+# Coverage
+*.gcda
+*.gcno
+coverage.info
+coverage-report/
+build-coverage/
+
 # CMake
 CMakeFiles/
 CMakeCache.txt

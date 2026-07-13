@@ -47,4 +47,11 @@ if(BUILD_TESTS)
     target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} third_party)
 
     add_test(NAME chess_tests COMMAND chess_tests)
+
+    option(ENABLE_COVERAGE "Build chess_tests with coverage instrumentation" OFF)
+
+    if(ENABLE_COVERAGE)
+        target_compile_options(chess_tests PRIVATE --coverage -O0 -g)
+        target_link_options(chess_tests PRIVATE --coverage)
+    endif()
 endif()

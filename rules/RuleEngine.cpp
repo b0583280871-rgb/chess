@@ -9,7 +9,7 @@ bool isLegalMove(const Board& board, const PieceMove& move, char piece) {
 
     Kind kind = kindFromChar(piece);
     auto it = config::moveShapes.find(kind);
-    if (it == config::moveShapes.end()) return true;   // no rule registered yet -> unrestricted for now
+    if (it == config::moveShapes.end()) return false;  
 
     const config::MoveRule& rule = it->second;
     char color = move.piece[0];

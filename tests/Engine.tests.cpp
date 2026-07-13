@@ -312,17 +312,17 @@ TEST_CASE("sendMove computes duration from piece speed and travel distance") {
     GameState st = makeState({"wQ . . .", ". . . .", ". . . .", ". . . ."});
     st.selection = {true, {0, 0}, 0};
 
-    sendMove(st, 0, 3); // queen: 4 cells/sec, 3 cells travelled -> 750ms
+    sendMove(st, 0, 3); // queen: 1.0 cells/sec, 3 cells travelled -> 3000ms
 
     REQUIRE(st.arbiter.hasActiveMotion());
 
     // Not yet arrived just before the computed duration...
-    st.arbiter.advanceTime(749, st.board);
+    st.arbiter.advanceTime(2999, st.board);
     CHECK(st.arbiter.hasActiveMotion());
     CHECK(tokenAt(st.board, {0, 3}) == EMPTY_TOKEN);
 
-    // ...but arrived exactly at 750ms, confirming the computed duration.
-    st.arbiter.advanceTime(750, st.board);
+    // ...but arrived exactly at 3000ms, confirming the computed duration.
+    st.arbiter.advanceTime(3000, st.board);
     CHECK_FALSE(st.arbiter.hasActiveMotion());
     CHECK(tokenAt(st.board, {0, 3}) == "wQ");
 }

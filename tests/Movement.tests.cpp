@@ -2,6 +2,7 @@
 
 #include "../realtime/RealTimeArbiter.hpp"
 #include "../rules/RuleEngine.hpp"
+#include "../rules/PieceRules.hpp"
 #include "../model/Board.hpp"
 #include "../model/GameState.hpp"
 #include "../model/Piece.hpp"
@@ -169,4 +170,17 @@ TEST_CASE("isLegalMove: a piece may never capture its own color") {
 TEST_CASE("isLegalMove: an invalid piece char throws PieceError") {
     Board b = parseBoard({". . . .", ". . . .", ". . . .", ". . . ."});
     CHECK_THROWS_AS(isLegalMove(b, makeMove(0, 0, 3, 1, "wX"), 'X'), PieceError);
+}
+
+TEST_CASE("isLegalMove returns false when no move rule is registered for a kind") {
+    Board b = parseBoard({"wR . .", ". . .", ". . ."});
+
+    auto savedShapes = config::moveShapes;
+    config::moveShapes.erase(Kind::Rook);
+    struct RestoreShapes {
+        decltype(savedShapes)& saved;
+        ~RestoreShapes() { config::moveShapes = saved; }
+    } restore{savedShapes};
+
+    CHECK_FALSE(isLegalMove(b, makeMove(0, 0, 0, 2, "wR"), 'R'));
 }
