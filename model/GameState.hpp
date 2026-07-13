@@ -17,4 +17,5 @@ struct GameState {
     Selection       selection;
     RealTimeArbiter arbiter;   // RealTimeArbiter owns the active-motion state;
                                // GameState merely holds an instance of it.
+    bool            gameOver = false;
 };

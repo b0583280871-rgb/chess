@@ -94,6 +94,45 @@ TEST_CASE("advanceTime loses a piece when the target turned friendly and the sou
     CHECK(tokenAt(st.board, {0, 3}) == "wP");
 }
 
+TEST_CASE("advanceTime's ArrivalEvent reports a captured piece with Captured state") {
+    GameState st = makeState({"wR . . bP"});
+    PieceMove m; m.from = {0, 0}; m.to = {0, 3};
+    m.startMs = 0; m.durationMs = 500; m.piece = "wR";
+    st.arbiter.startMotion(m);
+
+    ArrivalEvent event = st.arbiter.advanceTime(500, st.board);
+
+    CHECK(event.pieceArrived);
+    REQUIRE(event.capturedPiece.has_value());
+    CHECK(event.capturedPiece->kind == Kind::Pawn);
+    CHECK(event.capturedPiece->color == Color::Black);
+    CHECK(event.capturedPiece->state == PieceState::Captured);
+}
+
+TEST_CASE("advanceTime's ArrivalEvent has no captured piece when landing on an empty cell") {
+    GameState st = makeState({"wR . . ."});
+    PieceMove m; m.from = {0, 0}; m.to = {0, 3};
+    m.startMs = 0; m.durationMs = 500; m.piece = "wR";
+    st.arbiter.startMotion(m);
+
+    ArrivalEvent event = st.arbiter.advanceTime(500, st.board);
+
+    CHECK(event.pieceArrived);
+    CHECK_FALSE(event.capturedPiece.has_value());
+}
+
+TEST_CASE("advanceTime's ArrivalEvent reports pieceArrived false when the target turned friendly") {
+    GameState st = makeState({"wR . . wP"});
+    PieceMove m; m.from = {0, 0}; m.to = {0, 3};
+    m.startMs = 0; m.durationMs = 500; m.piece = "wR";
+    st.arbiter.startMotion(m);
+
+    ArrivalEvent event = st.arbiter.advanceTime(500, st.board);
+
+    CHECK_FALSE(event.pieceArrived);
+    CHECK_FALSE(event.capturedPiece.has_value());
+}
+
 // NOTE: the old "resolveMoves settles multiple due moves in arrival order"
 // test was deleted here. It relied on constructing a GameState with TWO
 // simultaneous PieceMove entries to exercise the old due/sort logic. That
@@ -199,6 +238,50 @@ TEST_CASE("sendMove accepts a new move immediately after the previous motion com
 
     handleWait(st, 3000);
     CHECK(tokenAt(st.board, {0, 0}) == "wR");
+}
+
+TEST_CASE("handleWait sets gameOver true when a king is captured on arrival") {
+    GameState st = makeState({"wR . . bK", ". . . .", ". . . .", ". . . ."});
+    st.selection = {true, {0, 0}, 0};
+
+    sendMove(st, 0, 3); // rook captures the black king
+    REQUIRE(st.arbiter.hasActiveMotion());
+    CHECK_FALSE(st.gameOver);
+
+    handleWait(st, 3000); // 3 cells at 1.0 cells/sec -> 3000ms
+
+    CHECK(st.gameOver);
+    CHECK(tokenAt(st.board, {0, 3}) == "wR");
+}
+
+TEST_CASE("sendMove after game over leaves the board completely unchanged") {
+    GameState st = makeState({"wR . . bK", ". . . wN", ". . . .", ". . . ."});
+    st.selection = {true, {0, 0}, 0};
+    sendMove(st, 0, 3);
+    handleWait(st, 3000);
+    REQUIRE(st.gameOver);
+
+    const std::string knightBefore = tokenAt(st.board, {1, 3});
+    const std::string rookBefore   = tokenAt(st.board, {0, 3});
+
+    st.selection = {true, {1, 3}, st.elapsedMs};
+    sendMove(st, 3, 2); // otherwise-legal knight move, attempted after game over
+
+    CHECK_FALSE(st.arbiter.hasActiveMotion());
+    CHECK(tokenAt(st.board, {1, 3}) == knightBefore);
+    CHECK(tokenAt(st.board, {0, 3}) == rookBefore);
+    CHECK_FALSE(st.selection.active);
+}
+
+TEST_CASE("capturing a non-king piece does not end the game") {
+    GameState st = makeState({"wR . . bP", ". . . .", ". . . .", ". . . ."});
+    st.selection = {true, {0, 0}, 0};
+
+    sendMove(st, 0, 3); // rook captures the black pawn
+    handleWait(st, 3000);
+
+    CHECK_FALSE(st.gameOver);
+    CHECK(tokenAt(st.board, {0, 3}) == "wR"); // capture went through normally
 }
 
 TEST_CASE("handleClick opens a fresh selection when clicking an idle piece") {

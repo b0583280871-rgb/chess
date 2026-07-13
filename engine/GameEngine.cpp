@@ -10,6 +10,10 @@
 void sendMove(GameState& st, int toRow, int toCol) {
     Selection& sel = st.selection;
 
+    if (st.gameOver) {
+        sel = Selection{};
+        return;
+    }
     if (st.arbiter.hasActiveMotion()) {
         sel = Selection{};
         return;
@@ -42,5 +46,8 @@ void sendMove(GameState& st, int toRow, int toCol) {
 
 void handleWait(GameState& st, long ms) {
     st.elapsedMs += ms;
-    st.arbiter.advanceTime(st.elapsedMs, st.board);
+    ArrivalEvent event = st.arbiter.advanceTime(st.elapsedMs, st.board);
+    if (event.capturedPiece && event.capturedPiece->kind == Kind::King) {
+        st.gameOver = true;
+    }
 }

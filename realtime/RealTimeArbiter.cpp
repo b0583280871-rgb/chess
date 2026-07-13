@@ -19,19 +19,27 @@ void RealTimeArbiter::startMotion(const PieceMove& move) {
     activeMove_ = move;
 }
 
-void RealTimeArbiter::advanceTime(long elapsedMs, Board& board) {
-    if (!activeMove_) return;
+ArrivalEvent RealTimeArbiter::advanceTime(long elapsedMs, Board& board) {
+    if (!activeMove_) return ArrivalEvent{};
 
     const PieceMove& m = *activeMove_;
-    if (elapsedMs < m.startMs + m.durationMs) return;   // not yet arrived
+    if (elapsedMs < m.startMs + m.durationMs) return ArrivalEvent{};   // not yet arrived
+
+    ArrivalEvent event;
 
     std::optional<Piece> movingPiece = board.pieceAt(m.from);
     if (movingPiece) {
         std::optional<Piece> destPiece = board.pieceAt(m.to);
         if (!destPiece || destPiece->color != movingPiece->color) {
+            if (destPiece) {
+                destPiece->state = PieceState::Captured;
+                event.capturedPiece = destPiece;
+            }
             board.movePiece(m.from, m.to);
+            event.pieceArrived = true;
         }
     }
 
     activeMove_.reset();
+    return event;
 }
