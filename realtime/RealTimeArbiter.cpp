@@ -1,5 +1,6 @@
 #include "RealTimeArbiter.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <optional>
 
@@ -7,8 +8,9 @@
 #include "../rules/PieceRules.hpp"
 
 double cellDistance(Position a, Position b) {
-    double dr = b.row - a.row, dc = b.col - a.col;
-    return std::sqrt(dr * dr + dc * dc);
+    double dr = std::abs(b.row - a.row);
+    double dc = std::abs(b.col - a.col);
+    return std::max(dr, dc);
 }
 
 bool RealTimeArbiter::hasActiveMotion() const {

@@ -18,10 +18,11 @@ namespace {
     }
 }
 
-TEST_CASE("cellDistance computes euclidean distance in cells") {
-    CHECK(cellDistance({0, 0}, {3, 4}) == doctest::Approx(5.0));
+TEST_CASE("cellDistance computes chessboard (Chebyshev) distance in cells") {
+    CHECK(cellDistance({0, 0}, {3, 4}) == doctest::Approx(4.0));  // max(3,4)
     CHECK(cellDistance({2, 2}, {2, 2}) == doctest::Approx(0.0));
-    CHECK(cellDistance({0, 0}, {0, 5}) == doctest::Approx(5.0));
+    CHECK(cellDistance({0, 0}, {0, 5}) == doctest::Approx(5.0));  // straight line: unaffected
+    CHECK(cellDistance({0, 0}, {3, 3}) == doctest::Approx(3.0));  // pure diagonal: one square per step
 }
 
 TEST_CASE("isLegalMove: king moves one square in any direction") {

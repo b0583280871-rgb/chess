@@ -465,7 +465,7 @@ TEST_CASE("runCommands demonstrates a pawn's two-square opening move with a clea
     std::vector<std::string> commands = {
         "click 5 305",   // select the pawn at (3,0)
         "click 5 105",   // move it two squares to (1,0)
-        "wait 1000",     // pawn: 2.0 cells/sec, 2 cells travelled -> 1000ms
+        "wait 2000",     // pawn: 1.0 cells/sec, 2 cells travelled -> 2000ms
         "print board"
     };
     ScriptRunner::run(commands, st);
@@ -485,7 +485,7 @@ TEST_CASE("runCommands demonstrates a pawn promoting to a queen upon reaching th
     std::vector<std::string> commands = {
         "click 5 105",   // select the pawn at (1,0), one square from the last row
         "click 5 5",     // move it to (0,0)
-        "wait 500",      // pawn: 2.0 cells/sec, 1 cell travelled -> 500ms
+        "wait 1000",     // pawn: 1.0 cells/sec, 1 cell travelled -> 1000ms
         "print board"
     };
     ScriptRunner::run(commands, st);
