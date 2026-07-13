@@ -8,8 +8,7 @@ std::optional<Position> pixelToCell(int x, int y, const Board& board) {
     int col = x / config::CELL_SIZE;
     int row = y / config::CELL_SIZE;
 
-    if (row < 0 || row >= board.rows() ||
-        col < 0 || col >= board.cols())
+    if (!board.isInBounds(Position{row, col}))
         return std::nullopt;
 
     return Position{row, col};

@@ -5,6 +5,8 @@
 #include "PieceRules.hpp"
 
 bool isLegalMove(const Board& board, const PieceMove& move, char piece) {
+    if (!board.isInBounds(move.to)) return false;
+
     Kind kind = kindFromChar(piece);
     auto it = config::moveShapes.find(kind);
     if (it == config::moveShapes.end()) return true;   // no rule registered yet -> unrestricted for now

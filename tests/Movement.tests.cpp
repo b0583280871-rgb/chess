@@ -152,6 +152,14 @@ TEST_CASE("isLegalMove: a two-square pawn move can never capture, even with an o
     CHECK_FALSE(isLegalMove(b, makeMove(2, 0, 0, 0, "wP"), 'P'));
 }
 
+TEST_CASE("isLegalMove: rejects a move whose destination is outside board bounds") {
+    Board b = parseBoard({"wQ . .", ". . .", ". . ."});
+    CHECK_FALSE(isLegalMove(b, makeMove(0, 0, -1, 0, "wQ"), 'Q'));  // negative row
+    CHECK_FALSE(isLegalMove(b, makeMove(0, 0, 0, -1, "wQ"), 'Q'));  // negative col
+    CHECK_FALSE(isLegalMove(b, makeMove(0, 0, 3, 0, "wQ"), 'Q'));   // row >= rows()
+    CHECK_FALSE(isLegalMove(b, makeMove(0, 0, 0, 3, "wQ"), 'Q'));   // col >= cols()
+}
+
 TEST_CASE("isLegalMove: a piece may never capture its own color") {
     Board b = parseBoard({"wR wP . ."});
     CHECK_FALSE(isLegalMove(b, makeMove(0, 0, 0, 1, "wR"), 'R'));
