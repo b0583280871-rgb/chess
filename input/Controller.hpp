@@ -1,6 +1,6 @@
 #pragma once
 
-#include "model/GameState.hpp"
+#include "../model/GameState.hpp"
 
 namespace Controller {
 

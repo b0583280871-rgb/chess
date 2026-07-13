@@ -1,11 +1,11 @@
 #include "doctest.h"
 
-#include "realtime/RealTimeArbiter.hpp"
-#include "rules/RuleEngine.hpp"
-#include "model/Board.hpp"
-#include "model/GameState.hpp"
-#include "model/Piece.hpp"
-#include "io/BoardParser.hpp"
+#include "../realtime/RealTimeArbiter.hpp"
+#include "../rules/RuleEngine.hpp"
+#include "../model/Board.hpp"
+#include "../model/GameState.hpp"
+#include "../model/Piece.hpp"
+#include "../io/BoardParser.hpp"
 
 namespace {
     PieceMove makeMove(int fromRow, int fromCol, int toRow, int toCol, const std::string& piece) {

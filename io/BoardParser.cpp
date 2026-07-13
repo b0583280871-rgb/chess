@@ -1,6 +1,6 @@
-#include "io/BoardParser.hpp"
-#include "io/BoardFormat.hpp"
-#include "model/Piece.hpp"
+#include "BoardParser.hpp"
+#include "BoardFormat.hpp"
+#include "../model/Piece.hpp"
 #include <cctype>
 #include <sstream>
 

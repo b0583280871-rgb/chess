@@ -1,8 +1,8 @@
-#include "io/BoardPrinter.hpp"
+#include "BoardPrinter.hpp"
 
 #include <sstream>
 
-#include "model/Piece.hpp"
+#include "../model/Piece.hpp"
 
 std::string formatBoard(const Board& b) {
     std::ostringstream out;

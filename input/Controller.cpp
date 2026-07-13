@@ -1,10 +1,10 @@
-#include "input/Controller.hpp"
+#include "Controller.hpp"
 
 #include <optional>
 
-#include "model/Board.hpp"
-#include "input/BoardMapper.hpp"
-#include "engine/GameEngine.hpp"
+#include "../model/Board.hpp"
+#include "BoardMapper.hpp"
+#include "../engine/GameEngine.hpp"
 
 namespace Controller {
 

@@ -1,4 +1,4 @@
-#include "rules/PieceRules.hpp"
+#include "PieceRules.hpp"
 
 #include <cmath>
 

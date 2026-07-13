@@ -1,11 +1,11 @@
-#include "engine/GameEngine.hpp"
+#include "GameEngine.hpp"
 
 #include <optional>
 
-#include "model/Board.hpp"
-#include "rules/PieceRules.hpp"
-#include "rules/RuleEngine.hpp"
-#include "realtime/RealTimeArbiter.hpp"
+#include "../model/Board.hpp"
+#include "../rules/PieceRules.hpp"
+#include "../rules/RuleEngine.hpp"
+#include "../realtime/RealTimeArbiter.hpp"
 
 void sendMove(GameState& st, int toRow, int toCol) {
     Selection& sel = st.selection;

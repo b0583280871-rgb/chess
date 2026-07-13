@@ -1,6 +1,6 @@
-#include "model/Piece.hpp"
+#include "Piece.hpp"
 
-#include "model/Board.hpp"
+#include "Board.hpp"
 
 bool isValidKindChar(char c) {
     switch (c) {

@@ -1,6 +1,6 @@
-#include "input/BoardMapper.hpp"
+#include "BoardMapper.hpp"
 
-#include "rules/config.hpp"
+#include "../rules/config.hpp"
 
 std::optional<Position> pixelToCell(int x, int y, const Board& board) {
     if (x < 0 || y < 0) return std::nullopt;

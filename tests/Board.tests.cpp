@@ -1,10 +1,10 @@
 #include "doctest.h"
 
-#include "model/Board.hpp"
-#include "model/Piece.hpp"
-#include "io/BoardParser.hpp"
-#include "io/BoardPrinter.hpp"
-#include "rules/PieceRules.hpp"
+#include "../model/Board.hpp"
+#include "../model/Piece.hpp"
+#include "../io/BoardParser.hpp"
+#include "../io/BoardPrinter.hpp"
+#include "../rules/PieceRules.hpp"
 
 TEST_CASE("trim removes leading and trailing whitespace") {
     CHECK(trim("  hello  ") == "hello");

@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "model/GameState.hpp"
+#include "../model/GameState.hpp"
 
 namespace ScriptRunner {
 

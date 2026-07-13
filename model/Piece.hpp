@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "model/Position.hpp"
+#include "Position.hpp"
 
 enum class Color { White, Black };
 enum class Kind  { King, Queen, Rook, Bishop, Knight, Pawn };

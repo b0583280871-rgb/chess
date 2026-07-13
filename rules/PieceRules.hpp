@@ -3,9 +3,9 @@
 #include <functional>
 #include <map>
 
-#include "model/Board.hpp"
-#include "model/Piece.hpp"
-#include "model/Position.hpp"
+#include "../model/Board.hpp"
+#include "../model/Piece.hpp"
+#include "../model/Position.hpp"
 
 int sign(int v);
 

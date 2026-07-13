@@ -1,8 +1,8 @@
-#include "rules/RuleEngine.hpp"
+#include "RuleEngine.hpp"
 
 #include <optional>
 
-#include "rules/PieceRules.hpp"
+#include "PieceRules.hpp"
 
 bool isLegalMove(const Board& board, const PieceMove& move, char piece) {
     Kind kind = kindFromChar(piece);

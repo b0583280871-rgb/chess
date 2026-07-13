@@ -1,6 +1,6 @@
 #include "doctest.h"
 
-#include "rules/PieceRules.hpp"
+#include "../rules/PieceRules.hpp"
 
 TEST_CASE("statsFor returns known speeds for standard pieces") {
     CHECK(config::statsFor(Kind::Queen).speedCellsPerSec == doctest::Approx(4.0));

@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "model/Piece.hpp"
-#include "model/Position.hpp"
+#include "Piece.hpp"
+#include "Position.hpp"
 
 class BoardOperationError : public std::runtime_error {
 public:

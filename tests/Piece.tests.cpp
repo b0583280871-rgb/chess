@@ -1,6 +1,6 @@
 #include "doctest.h"
 
-#include "model/Piece.hpp"
+#include "../model/Piece.hpp"
 
 #include <string>
 #include <vector>

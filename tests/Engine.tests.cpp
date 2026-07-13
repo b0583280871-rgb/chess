@@ -1,14 +1,14 @@
 #include "doctest.h"
 
-#include "input/Controller.hpp"
-#include "engine/GameEngine.hpp"
-#include "texttests/ScriptRunner.hpp"
-#include "realtime/RealTimeArbiter.hpp"
-#include "model/Board.hpp"
-#include "model/GameState.hpp"
-#include "model/Piece.hpp"
-#include "io/BoardParser.hpp"
-#include "io/BoardPrinter.hpp"
+#include "../input/Controller.hpp"
+#include "../engine/GameEngine.hpp"
+#include "../texttests/ScriptRunner.hpp"
+#include "../realtime/RealTimeArbiter.hpp"
+#include "../model/Board.hpp"
+#include "../model/GameState.hpp"
+#include "../model/Piece.hpp"
+#include "../io/BoardParser.hpp"
+#include "../io/BoardPrinter.hpp"
 
 #include <sstream>
 #include <iostream>
@@ -26,108 +26,97 @@ namespace {
     }
 }
 
-TEST_CASE("resolveMoves keeps a move active before its arrival time") {
+TEST_CASE("advanceTime keeps a move active before its arrival time") {
     GameState st = makeState({"wR . . ."});
     PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 1000; m.piece = "wR";
-    st.activeMoves.push_back(m);
+    st.arbiter.startMotion(m);
     st.elapsedMs = 500;
 
-    resolveMoves(st);
+    st.arbiter.advanceTime(st.elapsedMs, st.board);
 
-    REQUIRE(st.activeMoves.size() == 1);
+    REQUIRE(st.arbiter.hasActiveMotion());
     CHECK(tokenAt(st.board, {0, 3}) == EMPTY_TOKEN);
 }
 
-TEST_CASE("resolveMoves lands a move onto an empty target once due") {
+TEST_CASE("advanceTime lands a move onto an empty target once due") {
     GameState st = makeState({"wR . . ."});
     PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 1000; m.piece = "wR";
-    st.activeMoves.push_back(m);
+    st.arbiter.startMotion(m);
     st.elapsedMs = 1000;
 
-    resolveMoves(st);
+    st.arbiter.advanceTime(st.elapsedMs, st.board);
 
-    CHECK(st.activeMoves.empty());
+    CHECK_FALSE(st.arbiter.hasActiveMotion());
     CHECK(tokenAt(st.board, {0, 3}) == "wR");
 }
 
-TEST_CASE("resolveMoves captures an enemy occupying the target") {
+TEST_CASE("advanceTime captures an enemy occupying the target") {
     GameState st = makeState({"wR . . bP"});
     PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 500; m.piece = "wR";
-    st.activeMoves.push_back(m);
+    st.arbiter.startMotion(m);
     st.elapsedMs = 500;
 
-    resolveMoves(st);
+    st.arbiter.advanceTime(st.elapsedMs, st.board);
 
     CHECK(tokenAt(st.board, {0, 3}) == "wR");
 }
 
-TEST_CASE("resolveMoves leaves a piece at its source when the target turned friendly") {
-    // Corrected version of the old "bounces a piece home" test: with the
-    // mid-flight-disappearance bug fixed, the source piece was never removed
-    // in the first place, so there is nothing to "restore" - it simply
-    // never left. The board fixture below reflects that reality (the wR is
-    // actually still sitting at its source), instead of the old fixture that
-    // simulated the bug by starting with an empty source.
+TEST_CASE("advanceTime leaves a piece at its source when the target turned friendly") {
+    // With the mid-flight-disappearance bug fixed, the source piece is never
+    // removed in the first place, so there is nothing to "restore" - it
+    // simply never left. The board fixture reflects that reality (the wR is
+    // actually still sitting at its source).
     GameState st = makeState({"wR . . wP"});
     PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 500; m.piece = "wR";
-    st.activeMoves.push_back(m);
+    st.arbiter.startMotion(m);
     st.elapsedMs = 500;
 
-    resolveMoves(st);
+    st.arbiter.advanceTime(st.elapsedMs, st.board);
 
     CHECK(tokenAt(st.board, {0, 0}) == "wR");
     CHECK(tokenAt(st.board, {0, 3}) == "wP");
 }
 
-TEST_CASE("resolveMoves loses a piece when the target turned friendly and the source is occupied") {
+TEST_CASE("advanceTime loses a piece when the target turned friendly and the source is occupied") {
     GameState st = makeState({"wN . . wP"});
     PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 500; m.piece = "wR";
-    st.activeMoves.push_back(m);
+    st.arbiter.startMotion(m);
     st.elapsedMs = 500;
 
-    resolveMoves(st);
+    st.arbiter.advanceTime(st.elapsedMs, st.board);
 
     CHECK(tokenAt(st.board, {0, 0}) == "wN");
     CHECK(tokenAt(st.board, {0, 3}) == "wP");
 }
 
-TEST_CASE("resolveMoves settles multiple due moves in arrival order") {
-    // Board fixture updated to actually contain the pieces at their move
-    // sources (wP at (0,0), bP at (0,2)) - resolveMoves now looks up real
-    // pieces via pieceAt instead of writing PieceMove.piece strings blindly,
-    // so a source with nothing there is simply skipped.
-    GameState st = makeState({"wP . bP"});
-    PieceMove first; first.from = {0, 0}; first.to = {0, 1};
-    first.startMs = 0; first.durationMs = 200; first.piece = "wP";
-    PieceMove second; second.from = {0, 2}; second.to = {0, 1};
-    second.startMs = 0; second.durationMs = 100; second.piece = "bP";
-    st.activeMoves = {first, second};
-    st.elapsedMs = 300;
+// NOTE: the old "resolveMoves settles multiple due moves in arrival order"
+// test was deleted here. It relied on constructing a GameState with TWO
+// simultaneous PieceMove entries to exercise the old due/sort logic. That
+// scenario is now structurally impossible to build - RealTimeArbiter holds
+// at most one PieceMove (std::optional<PieceMove>), and startMotion() throws
+// if called while a motion is already active. There is no way to mechanically
+// translate this test; it tested behavior that can no longer exist.
 
-    resolveMoves(st);
-
-    CHECK(tokenAt(st.board, {0, 1}) == "wP");
-}
-
-TEST_CASE("sendMove keeps the piece at its source and queues an active move for a legal move") {
-    // Renamed from "clears the source": with the mid-flight bug fixed,
-    // sendMove no longer clears the source cell - the piece stays there
-    // until RealTimeArbiter confirms arrival.
+TEST_CASE("sendMove keeps the piece at its source and queues an active motion for a legal move") {
     GameState st = makeState({"wR . . .", ". . . .", ". . . .", ". . . ."});
     st.selection = {true, {0, 0}, 0};
 
     sendMove(st, 0, 3);
 
     CHECK(tokenAt(st.board, {0, 0}) == "wR");
-    REQUIRE(st.activeMoves.size() == 1);
-    CHECK(st.activeMoves[0].piece == "wR");
-    CHECK(st.activeMoves[0].to.col == 3);
+    CHECK(st.arbiter.hasActiveMotion());
     CHECK_FALSE(st.selection.active);
+
+    // Confirm the queued motion is indeed the rook heading to (0,3): advance
+    // past its travel time (1.0 cells/sec, 3 cells -> 3000ms) and check it
+    // actually arrives there.
+    st.arbiter.advanceTime(3000, st.board);
+    CHECK(tokenAt(st.board, {0, 3}) == "wR");
 }
 
 TEST_CASE("sendMove ignores an illegal move and leaves the board untouched") {
@@ -137,7 +126,7 @@ TEST_CASE("sendMove ignores an illegal move and leaves the board untouched") {
     sendMove(st, 1, 1); // diagonal - illegal for a rook
 
     CHECK(tokenAt(st.board, {0, 0}) == "wR");
-    CHECK(st.activeMoves.empty());
+    CHECK_FALSE(st.arbiter.hasActiveMotion());
     CHECK_FALSE(st.selection.active);
 }
 
@@ -145,10 +134,71 @@ TEST_CASE("sendMove computes duration from piece speed and travel distance") {
     GameState st = makeState({"wQ . . .", ". . . .", ". . . .", ". . . ."});
     st.selection = {true, {0, 0}, 0};
 
-    sendMove(st, 0, 3); // queen: 4 cells/sec, 3 cells travelled
+    sendMove(st, 0, 3); // queen: 4 cells/sec, 3 cells travelled -> 750ms
 
-    REQUIRE(st.activeMoves.size() == 1);
-    CHECK(st.activeMoves[0].durationMs == 750);
+    REQUIRE(st.arbiter.hasActiveMotion());
+
+    // Not yet arrived just before the computed duration...
+    st.arbiter.advanceTime(749, st.board);
+    CHECK(st.arbiter.hasActiveMotion());
+    CHECK(tokenAt(st.board, {0, 3}) == EMPTY_TOKEN);
+
+    // ...but arrived exactly at 750ms, confirming the computed duration.
+    st.arbiter.advanceTime(750, st.board);
+    CHECK_FALSE(st.arbiter.hasActiveMotion());
+    CHECK(tokenAt(st.board, {0, 3}) == "wQ");
+}
+
+TEST_CASE("sendMove rejects a second move request while any motion is active, even for a different piece") {
+    // Global "one active motion at a time" rule: while piece A is mid-flight,
+    // NO new move may be accepted - not even for a completely different,
+    // otherwise-legal move by piece B.
+    GameState st = makeState({"wR . . .", ". . . wN", ". . . .", ". . . ."});
+
+    // A: select the rook at (0,0) and send it toward (0,3).
+    st.selection = {true, {0, 0}, 0};
+    sendMove(st, 0, 3);
+    REQUIRE(st.arbiter.hasActiveMotion());
+
+    // B: attempt to select and move the knight at (1,3) to (3,2) - a legal
+    // knight move on an empty square - before A arrives.
+    st.selection = {true, {1, 3}, 0};
+    sendMove(st, 3, 2);
+
+    // The second request must be rejected purely because a motion is active:
+    // B never moves, and its selection is reset like any rejected move.
+    CHECK(tokenAt(st.board, {1, 3}) == "wN");
+    CHECK_FALSE(st.selection.active);
+
+    // A's original motion is completely unaffected by B's rejected attempt:
+    // advancing to its arrival still lands the rook at (0,3) exactly as
+    // queued, and the knight never moved at all.
+    st.arbiter.advanceTime(3000, st.board);
+    CHECK(tokenAt(st.board, {0, 3}) == "wR");
+    CHECK(tokenAt(st.board, {1, 3}) == "wN");
+}
+
+TEST_CASE("sendMove accepts a new move immediately after the previous motion completes, with no cooldown") {
+    GameState st = makeState({"wR . . .", ". . . .", ". . . .", ". . . ."});
+
+    st.selection = {true, {0, 0}, 0};
+    sendMove(st, 0, 3); // rook: 3 cells at 1.0 cells/sec -> 3000ms
+    REQUIRE(st.arbiter.hasActiveMotion());
+
+    handleWait(st, 3000); // arrives exactly on time
+    REQUIRE_FALSE(st.arbiter.hasActiveMotion());
+    REQUIRE(tokenAt(st.board, {0, 3}) == "wR");
+
+    // Immediately (zero additional wait) request a new move - nothing should
+    // block it now that the previous motion has fully completed.
+    st.selection = {true, {0, 3}, st.elapsedMs};
+    sendMove(st, 0, 0); // rook travels back, same 3-cell distance -> 3000ms
+
+    CHECK(st.arbiter.hasActiveMotion());
+    CHECK(tokenAt(st.board, {0, 3}) == "wR"); // still at source until this motion arrives
+
+    handleWait(st, 3000);
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");
 }
 
 TEST_CASE("handleClick opens a fresh selection when clicking an idle piece") {
@@ -178,8 +228,10 @@ TEST_CASE("handleClick completes a pending selection when clicking an empty cell
     Controller::click(st, 305, 5); // empty cell (0,3)
 
     CHECK(tokenAt(st.board, {0, 0}) == "wR");
-    REQUIRE(st.activeMoves.size() == 1);
-    CHECK(st.activeMoves[0].to.col == 3);
+    REQUIRE(st.arbiter.hasActiveMotion());
+
+    st.arbiter.advanceTime(3000, st.board);
+    CHECK(tokenAt(st.board, {0, 3}) == "wR");
 }
 
 TEST_CASE("handleClick completes a pending selection as a capture on an enemy cell") {
@@ -189,9 +241,11 @@ TEST_CASE("handleClick completes a pending selection as a capture on an enemy ce
     Controller::click(st, 305, 5); // the black pawn at (0,3)
 
     CHECK(tokenAt(st.board, {0, 0}) == "wR");
-    REQUIRE(st.activeMoves.size() == 1);
-    CHECK(st.activeMoves[0].to.col == 3);
+    REQUIRE(st.arbiter.hasActiveMotion());
     CHECK_FALSE(st.selection.active);
+
+    st.arbiter.advanceTime(3000, st.board);
+    CHECK(tokenAt(st.board, {0, 3}) == "wR"); // captured the black pawn
 }
 
 TEST_CASE("handleClick with no pending selection opens a selection regardless of piece color") {
@@ -200,7 +254,7 @@ TEST_CASE("handleClick with no pending selection opens a selection regardless of
     Controller::click(st, 305, 5); // black's pawn, nobody is pending
 
     CHECK(tokenAt(st.board, {0, 3}) == "bP");
-    CHECK(st.activeMoves.empty());
+    CHECK_FALSE(st.arbiter.hasActiveMotion());
     CHECK(st.selection.active);
     CHECK(st.selection.cell.col == 3);
 }
@@ -227,7 +281,7 @@ TEST_CASE("handleClick cancels an active selection on an outside-board click") {
     // knight, not be misread as completing a move from the stale selection.
     Controller::click(st, 305, 5); // click on the black knight at (0,3)
 
-    CHECK(st.activeMoves.empty());
+    CHECK_FALSE(st.arbiter.hasActiveMotion());
     CHECK(tokenAt(st.board, {0, 0}) == "wR");   // rook never moved
     CHECK(st.selection.active);
     CHECK(st.selection.cell.col == 3);          // freshly selected the knight, not a completed move
@@ -243,12 +297,12 @@ TEST_CASE("handleWait advances the clock and resolves due moves") {
     GameState st = makeState({"wR . . ."});
     PieceMove m; m.from = {0, 0}; m.to = {0, 3};
     m.startMs = 0; m.durationMs = 100; m.piece = "wR";
-    st.activeMoves.push_back(m);
+    st.arbiter.startMotion(m);
 
     handleWait(st, 150);
 
     CHECK(st.elapsedMs == 150);
-    CHECK(st.activeMoves.empty());
+    CHECK_FALSE(st.arbiter.hasActiveMotion());
     CHECK(tokenAt(st.board, {0, 3}) == "wR");
 }
 

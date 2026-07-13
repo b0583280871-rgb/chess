@@ -1,12 +1,12 @@
-#include "texttests/ScriptRunner.hpp"
+#include "ScriptRunner.hpp"
 
 #include <iostream>
 #include <sstream>
 
-#include "input/Controller.hpp"
-#include "engine/GameEngine.hpp"
-#include "io/BoardParser.hpp"
-#include "io/BoardPrinter.hpp"
+#include "../input/Controller.hpp"
+#include "../engine/GameEngine.hpp"
+#include "../io/BoardParser.hpp"
+#include "../io/BoardPrinter.hpp"
 
 namespace ScriptRunner {
 

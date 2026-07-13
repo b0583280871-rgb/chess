@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "model/Board.hpp"
+#include "../model/Board.hpp"
 
 class BoardError : public std::runtime_error {
 public:
