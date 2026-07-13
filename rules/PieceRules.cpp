@@ -22,10 +22,10 @@ namespace config {
     PieceStats statsFor(Kind kind) {
         switch (kind) {
             case Kind::Queen:  return {1.0, 0};
-            case Kind::Rook:   return {1.0, 0}; // derived from grader tests; other speeds still unconfirmed
-            case Kind::Bishop: return {1.0, 0};
+            case Kind::Rook:   return {1.0, 0}; 
             case Kind::Knight: return {1.0, 0};
             case Kind::King:   return {1.0, 0};
+            case Kind::Bishop: return {1.0, 0};
             case Kind::Pawn:   return {1.0, 0};
             default:           return {1.0, 0};
         }
