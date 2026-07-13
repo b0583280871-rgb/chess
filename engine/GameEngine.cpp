@@ -18,6 +18,10 @@ void sendMove(GameState& st, int toRow, int toCol) {
         sel = Selection{};
         return;
     }
+    if (st.arbiter.isPieceCurrentlyJumping(sel.cell)) {
+        sel = Selection{};
+        return;
+    }
 
     std::optional<Piece> movingPiece = st.board.pieceAt(sel.cell);
     if (!movingPiece) {
@@ -42,6 +46,21 @@ void sendMove(GameState& st, int toRow, int toCol) {
         st.arbiter.startMotion(m);
     }
     sel = Selection{};
+}
+
+void startJump(GameState& st, Position cell) {
+    if (st.gameOver) return;
+
+    std::optional<Piece> piece = st.board.pieceAt(cell);
+    if (!piece) return;
+
+    try {
+        st.arbiter.startJump(cell, st.elapsedMs);
+    } catch (const RealTimeArbiterError&) {
+        // Silently rejected - same treatment as any other illegal/blocked
+        // move attempt elsewhere in this codebase: no error channel, no
+        // exception escapes GameEngine.
+    }
 }
 
 void handleWait(GameState& st, long ms) {

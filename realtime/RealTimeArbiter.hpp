@@ -20,27 +20,34 @@ private:
     std::string code_;
 };
 
-// Reports the facts of an advanceTime() call - whether the active motion
-// arrived this tick, and which piece (if any) was captured on arrival.
-// RealTimeArbiter only reports what happened; it does not interpret what a
-// capture means for the game (e.g. a king capture ending the game) - that
-// interpretation belongs to GameEngine.
 struct ArrivalEvent {
     bool pieceArrived = false;
-    std::optional<Piece> capturedPiece;   // set only if pieceArrived is true AND a piece was captured on arrival
+    std::optional<Piece> capturedPiece;   
 };
 
-// Owns the single active motion for the whole board. The common route allows
-// only one active motion at a time, globally - not per piece. GameEngine
-// consults hasActiveMotion() before starting a new one; startMotion() itself
-// throws if that invariant is somehow violated (defensive - should never
-// happen given GameEngine's guard).
 class RealTimeArbiter {
 public:
     bool hasActiveMotion() const;
-    void startMotion(const PieceMove& move);                    // throws RealTimeArbiterError if a motion is already active
-    ArrivalEvent advanceTime(long elapsedMs, Board& board);      // resolves the active motion's arrival, if due
+    void startMotion(const PieceMove& move);
+    ArrivalEvent advanceTime(long elapsedMs, Board& board);
+
+    bool hasActiveJump() const;
+    bool isPieceCurrentlyMoving(Position pos) const;   // true if activeMove_ exists and its `from` equals pos
+    bool isPieceCurrentlyJumping(Position pos) const;  // true if activeJump_ exists and its cell equals pos
+    void startJump(Position cell, long startMs);       // throws RealTimeArbiterError if a jump is already active, or the piece is currently moving
 
 private:
+    // PieceJump is a private implementation detail of RealTimeArbiter alone -
+    // nothing outside this class ever needs to name its type. It's declared
+    // as a private nested struct (rather than an anonymous-namespace type in
+    // the .cpp) because std::optional<PieceJump> as a member here requires a
+    // complete type visible at this point in the header; an anonymous
+    // namespace in RealTimeArbiter.cpp is invisible from this header entirely.
+    struct PieceJump {
+        Position cell;
+        long     startMs;
+    };
+
     std::optional<PieceMove> activeMove_;
+    std::optional<PieceJump> activeJump_;
 };

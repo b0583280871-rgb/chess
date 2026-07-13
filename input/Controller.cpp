@@ -36,4 +36,14 @@ namespace Controller {
         }
     }
 
+    void jump(GameState& st, int x, int y) {
+        auto cell = pixelToCell(x, y, st.board);
+        if (!cell) return;
+
+        std::optional<Piece> piece = st.board.pieceAt(*cell);
+        if (!piece) return;
+
+        startJump(st, *cell);
+    }
+
 }

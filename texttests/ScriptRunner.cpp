@@ -20,6 +20,10 @@ namespace ScriptRunner {
                 int x, y;
                 ss >> x >> y;
                 Controller::click(st, x, y);
+            } else if (verb == "jump") {
+                int x, y;
+                ss >> x >> y;
+                Controller::jump(st, x, y);
             } else if (verb == "wait") {
                 long ms; ss >> ms;
                 handleWait(st, ms);

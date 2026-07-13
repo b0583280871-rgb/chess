@@ -177,6 +177,101 @@ TEST_CASE("advanceTime does not promote a non-pawn piece that reaches what would
     CHECK(tokenAt(st.board, {0, 0}) == "wR");
 }
 
+TEST_CASE("startJump activates a jump for an idle piece") {
+    GameState st = makeState({"wR . .", ". . .", ". . ."});
+    CHECK_FALSE(st.arbiter.hasActiveJump());
+
+    st.arbiter.startJump({0, 0}, 0);
+
+    CHECK(st.arbiter.hasActiveJump());
+    CHECK(st.arbiter.isPieceCurrentlyJumping({0, 0}));
+}
+
+TEST_CASE("startJump throws if a jump is already active") {
+    GameState st = makeState({"wR . wN", ". . .", ". . ."});
+    st.arbiter.startJump({0, 0}, 0);
+
+    CHECK_THROWS_AS(st.arbiter.startJump({0, 2}, 0), RealTimeArbiterError);
+}
+
+TEST_CASE("startJump throws for a piece that is currently the active move's source") {
+    GameState st = makeState({"wR . .", ". . .", ". . ."});
+    PieceMove m; m.from = {0, 0}; m.to = {0, 2}; m.startMs = 0; m.durationMs = 1000; m.piece = "wR";
+    st.arbiter.startMotion(m);
+
+    CHECK_THROWS_AS(st.arbiter.startJump({0, 0}, 0), RealTimeArbiterError);
+}
+
+TEST_CASE("advanceTime leaves an active jump untouched before its 1000ms window elapses") {
+    GameState st = makeState({"wR . .", ". . .", ". . ."});
+    st.arbiter.startJump({0, 0}, 0);
+
+    st.arbiter.advanceTime(999, st.board);
+
+    CHECK(st.arbiter.hasActiveJump());
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");
+}
+
+TEST_CASE("advanceTime lands a jump with zero board change once its window elapses") {
+    GameState st = makeState({"wR . .", ". . .", ". . ."});
+    st.arbiter.startJump({0, 0}, 0);
+
+    st.arbiter.advanceTime(1000, st.board);
+
+    CHECK_FALSE(st.arbiter.hasActiveJump());
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");
+}
+
+TEST_CASE("advanceTime intercepts an enemy move arriving at an active jump's cell") {
+    GameState st = makeState({"wR . bN", ". . .", ". . ."});
+    st.arbiter.startJump({0, 0}, 0);   // wR jumps in place
+
+    PieceMove m; m.from = {0, 2}; m.to = {0, 0}; m.startMs = 0; m.durationMs = 999; m.piece = "bN";
+    st.arbiter.startMotion(m);
+
+    ArrivalEvent event = st.arbiter.advanceTime(999, st.board);
+
+    CHECK_FALSE(st.arbiter.hasActiveJump());
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");          // jumper unchanged, still present
+    CHECK(tokenAt(st.board, {0, 2}) == EMPTY_TOKEN);   // arriving piece never lands anywhere
+    REQUIRE(event.capturedPiece.has_value());
+    CHECK(event.capturedPiece->kind == Kind::Knight);
+    CHECK(event.capturedPiece->color == Color::Black);
+    CHECK(event.capturedPiece->state == PieceState::Captured);
+}
+
+TEST_CASE("advanceTime treats a friendly arrival at a jump's cell as an ordinary friendly-block, not interception") {
+    GameState st = makeState({"wR . wN", ". . .", ". . ."});
+    st.arbiter.startJump({0, 0}, 0);   // wR jumps in place
+
+    PieceMove m; m.from = {0, 2}; m.to = {0, 0}; m.startMs = 0; m.durationMs = 999; m.piece = "wN";
+    st.arbiter.startMotion(m);
+
+    ArrivalEvent event = st.arbiter.advanceTime(999, st.board);
+
+    CHECK(st.arbiter.hasActiveJump());                 // jump unaffected, still active
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");           // jumper still there
+    CHECK(tokenAt(st.board, {0, 2}) == "wN");           // friendly move lost, arriving piece stays put
+    CHECK_FALSE(event.pieceArrived);
+    CHECK_FALSE(event.capturedPiece.has_value());
+}
+
+TEST_CASE("advanceTime resolves an ordinary capture when a move arrives after the jump already expired") {
+    GameState st = makeState({"wR . bN", ". . .", ". . ."});
+    st.arbiter.startJump({0, 0}, 0);
+    st.arbiter.advanceTime(1000, st.board);            // jump expires independently first
+    REQUIRE_FALSE(st.arbiter.hasActiveJump());
+
+    PieceMove m; m.from = {0, 2}; m.to = {0, 0}; m.startMs = 1000; m.durationMs = 500; m.piece = "bN";
+    st.arbiter.startMotion(m);
+
+    ArrivalEvent event = st.arbiter.advanceTime(1500, st.board);
+
+    CHECK(tokenAt(st.board, {0, 0}) == "bN");          // ordinary capture-by-landing, not interception
+    REQUIRE(event.capturedPiece.has_value());
+    CHECK(event.capturedPiece->kind == Kind::Rook);
+}
+
 // NOTE: the old "resolveMoves settles multiple due moves in arrival order"
 // test was deleted here. It relied on constructing a GameState with TWO
 // simultaneous PieceMove entries to exercise the old due/sort logic. That
@@ -326,6 +421,85 @@ TEST_CASE("capturing a non-king piece does not end the game") {
 
     CHECK_FALSE(st.gameOver);
     CHECK(tokenAt(st.board, {0, 3}) == "wR"); // capture went through normally
+}
+
+TEST_CASE("startJump succeeds for an idle, non-moving, non-jumping piece") {
+    GameState st = makeState({"wR . .", ". . .", ". . ."});
+
+    startJump(st, {0, 0});
+
+    CHECK(st.arbiter.hasActiveJump());
+    CHECK(st.arbiter.isPieceCurrentlyJumping({0, 0}));
+}
+
+TEST_CASE("startJump is a silent no-op for a piece that is currently the active move's source") {
+    GameState st = makeState({"wR . .", ". . .", ". . ."});
+    st.selection = {true, {0, 0}, 0};
+    sendMove(st, 0, 2);
+    REQUIRE(st.arbiter.hasActiveMotion());
+
+    startJump(st, {0, 0});
+
+    CHECK_FALSE(st.arbiter.hasActiveJump());
+}
+
+TEST_CASE("startJump is a silent no-op while a jump is already active anywhere on the board") {
+    GameState st = makeState({"wR . wN", ". . .", ". . ."});
+    startJump(st, {0, 0});
+    REQUIRE(st.arbiter.hasActiveJump());
+
+    startJump(st, {0, 2});
+
+    CHECK(st.arbiter.isPieceCurrentlyJumping({0, 0}));
+    CHECK_FALSE(st.arbiter.isPieceCurrentlyJumping({0, 2}));
+}
+
+TEST_CASE("sendMove is rejected for a piece that is currently jumping") {
+    GameState st = makeState({"wR . .", ". . .", ". . ."});
+    startJump(st, {0, 0});
+    REQUIRE(st.arbiter.hasActiveJump());
+
+    st.selection = {true, {0, 0}, 0};
+    sendMove(st, 0, 2);
+
+    CHECK_FALSE(st.arbiter.hasActiveMotion());
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");
+    CHECK_FALSE(st.selection.active);
+}
+
+TEST_CASE("sendMove and startJump both no-op once the game is over") {
+    GameState st = makeState({"wR . . bK", ". . . wN", ". . . .", ". . . ."});
+    st.selection = {true, {0, 0}, 0};
+    sendMove(st, 0, 3);      // rook captures the black king
+    handleWait(st, 3000);
+    REQUIRE(st.gameOver);
+
+    st.selection = {true, {1, 3}, st.elapsedMs};
+    sendMove(st, 3, 2);      // otherwise-legal knight move
+    CHECK_FALSE(st.arbiter.hasActiveMotion());
+    CHECK(tokenAt(st.board, {1, 3}) == "wN");
+
+    startJump(st, {1, 3});
+    CHECK_FALSE(st.arbiter.hasActiveJump());
+}
+
+TEST_CASE("a king destroyed via jump interception sets gameOver true") {
+    GameState st = makeState({"wR bK .", ". . .", ". . ."});
+
+    startJump(st, {0, 0});    // wR jumps in place
+
+    st.selection = {true, {0, 1}, 0};
+    sendMove(st, 0, 0);       // bK attempts to move onto wR's cell
+
+    REQUIRE(st.arbiter.hasActiveMotion());
+    REQUIRE(st.arbiter.hasActiveJump());
+
+    handleWait(st, 1000);     // the king's move and the jump's window elapse at the same tick
+
+    CHECK(st.gameOver);
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");    // jumper survives, unmoved
+    CHECK(tokenAt(st.board, {0, 1}) == EMPTY_TOKEN);
+    CHECK_FALSE(st.arbiter.hasActiveJump());     // jump concluded via interception
 }
 
 TEST_CASE("handleClick opens a fresh selection when clicking an idle piece") {
@@ -494,4 +668,69 @@ TEST_CASE("runCommands demonstrates a pawn promoting to a queen upon reaching th
 
     CHECK(captured.str() == formatBoard(st.board));
     CHECK(tokenAt(st.board, {0, 0}) == "wQ");
+}
+
+TEST_CASE("runCommands demonstrates a successful jump interception") {
+    GameState st = makeState({"wR bR .", ". . .", ". . ."});
+
+    std::ostringstream captured;
+    std::streambuf* old = std::cout.rdbuf(captured.rdbuf());
+
+    std::vector<std::string> commands = {
+        "jump 5 5",      // wR at (0,0) jumps in place
+        "click 105 5",   // select bR at (0,1)
+        "click 5 5",     // send it toward wR's cell - a legal 1-cell rook move
+        "wait 1000",     // rook: 1.0 cells/sec, 1 cell -> 1000ms - same tick as the jump's window
+        "print board"
+    };
+    ScriptRunner::run(commands, st);
+
+    std::cout.rdbuf(old);
+
+    CHECK(captured.str() == formatBoard(st.board));
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");          // jumper survives, unmoved
+    CHECK(tokenAt(st.board, {0, 1}) == EMPTY_TOKEN);   // arriving enemy destroyed mid-air
+    CHECK_FALSE(st.arbiter.hasActiveJump());
+}
+
+TEST_CASE("runCommands demonstrates a jump landing normally with no interception") {
+    GameState st = makeState({"wR . .", ". . .", ". . ."});
+
+    std::ostringstream captured;
+    std::streambuf* old = std::cout.rdbuf(captured.rdbuf());
+
+    std::vector<std::string> commands = {
+        "jump 5 5",      // wR at (0,0) jumps in place
+        "wait 1000",     // no enemy arrives - the jump simply lands
+        "print board"
+    };
+    ScriptRunner::run(commands, st);
+
+    std::cout.rdbuf(old);
+
+    CHECK(captured.str() == formatBoard(st.board));
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");
+    CHECK_FALSE(st.arbiter.hasActiveJump());
+}
+
+TEST_CASE("runCommands demonstrates a rejected move attempt against a currently-jumping piece") {
+    GameState st = makeState({"wR . .", ". . .", ". . ."});
+
+    std::ostringstream captured;
+    std::streambuf* old = std::cout.rdbuf(captured.rdbuf());
+
+    std::vector<std::string> commands = {
+        "jump 5 5",      // wR at (0,0) starts jumping
+        "click 5 5",     // select the jumping rook itself
+        "click 205 5",   // attempt to move it - must be rejected outright
+        "wait 1000",     // the jump lands normally in the meantime
+        "print board"
+    };
+    ScriptRunner::run(commands, st);
+
+    std::cout.rdbuf(old);
+
+    CHECK(captured.str() == formatBoard(st.board));
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");   // never moved
+    CHECK_FALSE(st.arbiter.hasActiveMotion());
 }
