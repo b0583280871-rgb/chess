@@ -35,6 +35,7 @@ public:
     void addPiece(const Piece& piece);           // throws BoardOperationError if out of bounds or occupied
     void removePiece(Position pos);              // no-op if already empty; throws only if out of bounds
     void movePiece(Position from, Position to);  // throws if `from` is empty or either position is out of bounds
+    void promoteAt(Position pos, Kind newKind);  // throws BoardOperationError if pos is empty or out of bounds
 
 private:
     std::vector<std::vector<std::optional<Piece>>> cells_;

@@ -22,6 +22,11 @@ bool isLegalMove(const Board& board, const PieceMove& move, char piece) {
     int dCol = move.to.col - move.from.col;
     if (!shape(dRow, dCol, color)) return false;
 
+    if (kind == Kind::Pawn && dCol == 0 && (dRow == 2 || dRow == -2)) {
+        std::optional<Piece> movingPiece = board.pieceAt(move.from);
+        if (movingPiece && movingPiece->hasMoved) return false;
+    }
+
     if (rule.slides && !isPathClear(board, move.from, move.to))
         return false;
 

@@ -51,7 +51,8 @@ namespace config {
         return (color == COLOR_WHITE_CHAR) ? -1 : 1;
     }
     bool pawnShape(int dRow, int dCol, char color) {
-        return dCol == 0 && dRow == pawnForwardDir(color);
+        int dir = pawnForwardDir(color);
+        return dCol == 0 && (dRow == dir || dRow == 2 * dir);
     }
     bool pawnCaptureShape(int dRow, int dCol, char color) {
         return std::abs(dCol) == 1 && dRow == pawnForwardDir(color);
@@ -63,6 +64,6 @@ namespace config {
         {Kind::Rook,   {rookShape,   true }},
         {Kind::Bishop, {bishopShape, true }},
         {Kind::Knight, {knightShape, false}},
-        {Kind::Pawn,   {pawnShape,   false, pawnCaptureShape}},
+        {Kind::Pawn,   {pawnShape,   true,  pawnCaptureShape}},
     };
 }

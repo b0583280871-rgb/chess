@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "../model/Board.hpp"
+#include "../rules/PieceRules.hpp"
 
 double cellDistance(Position a, Position b) {
     double dr = b.row - a.row, dc = b.col - a.col;
@@ -36,6 +37,14 @@ ArrivalEvent RealTimeArbiter::advanceTime(long elapsedMs, Board& board) {
                 event.capturedPiece = destPiece;
             }
             board.movePiece(m.from, m.to);
+
+            if (movingPiece->kind == Kind::Pawn) {
+                int lastRow = (config::pawnForwardDir(colorToChar(movingPiece->color)) < 0) ? 0 : board.rows() - 1;
+                if (m.to.row == lastRow) {
+                    board.promoteAt(m.to, Kind::Queen);
+                }
+            }
+
             event.pieceArrived = true;
         }
     }

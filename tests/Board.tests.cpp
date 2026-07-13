@@ -168,6 +168,58 @@ TEST_CASE("isPathClear returns false when a piece blocks the path") {
     CHECK_FALSE(isPathClear(b, {0, 0}, {0, 3}));
 }
 
+TEST_CASE("movePiece sets hasMoved to true after relocating a piece") {
+    Board b = parseBoard({"wP . .", ". . .", ". . ."});
+    CHECK_FALSE(b.pieceAt({0, 0})->hasMoved);
+
+    b.movePiece({0, 0}, {1, 0});
+
+    CHECK(b.pieceAt({1, 0})->hasMoved);
+}
+
+TEST_CASE("movePiece keeps hasMoved true across a second move") {
+    Board b = parseBoard({"wP . .", ". . .", ". . ."});
+    b.movePiece({0, 0}, {1, 0});
+    b.movePiece({1, 0}, {2, 0});
+
+    CHECK(b.pieceAt({2, 0})->hasMoved);
+}
+
+TEST_CASE("promoteAt changes a piece's Kind, leaving other fields untouched") {
+    Board b = parseBoard({"wP . .", ". . .", ". . ."});
+    Piece before = *b.pieceAt({0, 0});
+
+    b.promoteAt({0, 0}, Kind::Queen);
+
+    Piece after = *b.pieceAt({0, 0});
+    CHECK(after.kind == Kind::Queen);
+    CHECK(after.id == before.id);
+    CHECK(after.color == before.color);
+    CHECK(after.cell == before.cell);
+    CHECK(after.state == before.state);
+    CHECK(after.hasMoved == before.hasMoved);
+}
+
+TEST_CASE("promoteAt throws BoardOperationError on an empty cell") {
+    Board b = parseBoard({". . .", ". . .", ". . ."});
+    try {
+        b.promoteAt({0, 0}, Kind::Queen);
+        FAIL("expected BoardOperationError");
+    } catch (const BoardOperationError& e) {
+        CHECK(e.code() == "CELL_EMPTY");
+    }
+}
+
+TEST_CASE("promoteAt throws BoardOperationError on an out-of-bounds position") {
+    Board b = parseBoard({". . .", ". . .", ". . ."});
+    try {
+        b.promoteAt({99, 99}, Kind::Queen);
+        FAIL("expected BoardOperationError");
+    } catch (const BoardOperationError& e) {
+        CHECK(e.code() == "OUT_OF_BOUNDS");
+    }
+}
+
 TEST_CASE("isPathClear works along diagonals") {
     Board b = parseBoard({
         "wB . . .",

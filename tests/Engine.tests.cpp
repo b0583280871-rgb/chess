@@ -133,6 +133,50 @@ TEST_CASE("advanceTime's ArrivalEvent reports pieceArrived false when the target
     CHECK_FALSE(event.capturedPiece.has_value());
 }
 
+TEST_CASE("advanceTime promotes a white pawn to a queen when it reaches the last row") {
+    GameState st = makeState({". . .", ". . .", "wP . ."});
+    PieceMove m; m.from = {2, 0}; m.to = {0, 0};
+    m.startMs = 0; m.durationMs = 500; m.piece = "wP";
+    st.arbiter.startMotion(m);
+
+    st.arbiter.advanceTime(500, st.board);
+
+    CHECK(tokenAt(st.board, {0, 0}) == "wQ");
+}
+
+TEST_CASE("advanceTime promotes a black pawn reaching the last row for its color") {
+    GameState st = makeState({"bP . .", ". . .", ". . ."});
+    PieceMove m; m.from = {0, 0}; m.to = {2, 0};
+    m.startMs = 0; m.durationMs = 500; m.piece = "bP";
+    st.arbiter.startMotion(m);
+
+    st.arbiter.advanceTime(500, st.board);
+
+    CHECK(tokenAt(st.board, {2, 0}) == "bQ");
+}
+
+TEST_CASE("advanceTime leaves a pawn as a pawn when it doesn't reach the last row") {
+    GameState st = makeState({". . .", ". . .", "wP . ."});
+    PieceMove m; m.from = {2, 0}; m.to = {1, 0};
+    m.startMs = 0; m.durationMs = 500; m.piece = "wP";
+    st.arbiter.startMotion(m);
+
+    st.arbiter.advanceTime(500, st.board);
+
+    CHECK(tokenAt(st.board, {1, 0}) == "wP");
+}
+
+TEST_CASE("advanceTime does not promote a non-pawn piece that reaches what would be a pawn's last row") {
+    GameState st = makeState({". . .", ". . .", "wR . ."});
+    PieceMove m; m.from = {2, 0}; m.to = {0, 0};
+    m.startMs = 0; m.durationMs = 500; m.piece = "wR";
+    st.arbiter.startMotion(m);
+
+    st.arbiter.advanceTime(500, st.board);
+
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");
+}
+
 // NOTE: the old "resolveMoves settles multiple due moves in arrival order"
 // test was deleted here. It relied on constructing a GameState with TWO
 // simultaneous PieceMove entries to exercise the old due/sort logic. That
@@ -407,4 +451,47 @@ TEST_CASE("runCommands executes click, wait and print in sequence") {
 
     CHECK(captured.str() == formatBoard(st.board));
     CHECK(tokenAt(st.board, {0, 3}) == "wR");
+}
+
+TEST_CASE("runCommands demonstrates a pawn's two-square opening move with a clear path") {
+    // 4 rows so the landing square (row 1) is NOT the last row - this test is
+    // about the two-square move itself, not promotion, so it must land the
+    // pawn somewhere it stays a pawn.
+    GameState st = makeState({". . .", ". . .", ". . .", "wP . ."});
+
+    std::ostringstream captured;
+    std::streambuf* old = std::cout.rdbuf(captured.rdbuf());
+
+    std::vector<std::string> commands = {
+        "click 5 305",   // select the pawn at (3,0)
+        "click 5 105",   // move it two squares to (1,0)
+        "wait 2000",     // 2 cells at 1.0 cells/sec -> 2000ms
+        "print board"
+    };
+    ScriptRunner::run(commands, st);
+
+    std::cout.rdbuf(old);
+
+    CHECK(captured.str() == formatBoard(st.board));
+    CHECK(tokenAt(st.board, {1, 0}) == "wP");
+}
+
+TEST_CASE("runCommands demonstrates a pawn promoting to a queen upon reaching the last row") {
+    GameState st = makeState({". . .", "wP . .", ". . ."});
+
+    std::ostringstream captured;
+    std::streambuf* old = std::cout.rdbuf(captured.rdbuf());
+
+    std::vector<std::string> commands = {
+        "click 5 105",   // select the pawn at (1,0), one square from the last row
+        "click 5 5",     // move it to (0,0)
+        "wait 1000",     // 1 cell at 1.0 cells/sec -> 1000ms
+        "print board"
+    };
+    ScriptRunner::run(commands, st);
+
+    std::cout.rdbuf(old);
+
+    CHECK(captured.str() == formatBoard(st.board));
+    CHECK(tokenAt(st.board, {0, 0}) == "wQ");
 }

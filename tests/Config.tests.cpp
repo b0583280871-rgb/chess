@@ -58,6 +58,15 @@ TEST_CASE("shape helpers classify pawn moves and captures separately") {
     CHECK_FALSE(config::pawnCaptureShape(-1, 0, 'w'));
 }
 
+TEST_CASE("pawnShape accepts a two-square forward move and still rejects sideways/backward moves") {
+    CHECK(config::pawnShape(-2, 0, 'w'));           // white: two squares forward
+    CHECK(config::pawnShape(2, 0, 'b'));            // black: two squares forward
+    CHECK_FALSE(config::pawnShape(-2, 1, 'w'));     // two rows but not straight
+    CHECK_FALSE(config::pawnShape(2, 0, 'w'));      // backward for white
+    CHECK_FALSE(config::pawnShape(0, 1, 'w'));      // sideways
+    CHECK_FALSE(config::pawnShape(-3, 0, 'w'));     // three squares - too far
+}
+
 TEST_CASE("moveShapes registers a rule for every standard piece") {
     for (Kind kind : {Kind::King, Kind::Queen, Kind::Rook, Kind::Bishop, Kind::Knight, Kind::Pawn}) {
         CHECK(config::moveShapes.count(kind) == 1);

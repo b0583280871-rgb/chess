@@ -38,8 +38,18 @@ void Board::movePiece(Position from, Position to) {
 
     Piece moved = *src;
     moved.cell = to;
+    moved.hasMoved = true;
     cells_[to.row][to.col] = moved;
     src.reset();
+}
+
+void Board::promoteAt(Position pos, Kind newKind) {
+    if (!isInBounds(pos)) throw BoardOperationError("OUT_OF_BOUNDS");
+
+    std::optional<Piece>& cell = cells_[pos.row][pos.col];
+    if (!cell.has_value()) throw BoardOperationError("CELL_EMPTY");
+
+    cell->kind = newKind;
 }
 
 bool isEmpty(const std::string& tok) { return tok == EMPTY_TOKEN; }

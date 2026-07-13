@@ -107,6 +107,51 @@ TEST_CASE("isLegalMove: pawn captures diagonally only, never straight") {
     CHECK_FALSE(isLegalMove(straightIntoEnemy, makeMove(1, 0, 0, 0, "wP"), 'P'));
 }
 
+TEST_CASE("isLegalMove: a pawn may advance two squares from its starting row if the path is clear") {
+    Board b = parseBoard({
+        ". . .",
+        ". . .",
+        "wP . .",
+        ". . ."
+    });
+    CHECK(isLegalMove(b, makeMove(2, 0, 0, 0, "wP"), 'P'));
+}
+
+TEST_CASE("isLegalMove: a pawn that has already moved may not advance two squares, even with a clear path") {
+    Board b = parseBoard({
+        ". . .",
+        ". . .",
+        ". . .",
+        "wP . ."
+    });
+    b.movePiece({3, 0}, {2, 0});   // simulate the pawn's first (one-square) move; hasMoved becomes true
+
+    CHECK_FALSE(isLegalMove(b, makeMove(2, 0, 0, 0, "wP"), 'P'));
+}
+
+TEST_CASE("isLegalMove: a two-square pawn move is rejected if the intermediate cell is blocked") {
+    Board b = parseBoard({
+        ". . .",
+        "bN . .",
+        "wP . ."
+    });
+    CHECK_FALSE(isLegalMove(b, makeMove(2, 0, 0, 0, "wP"), 'P'));
+}
+
+TEST_CASE("isLegalMove: a two-square pawn move can never capture, even with an otherwise clear path") {
+    // The destination is occupied, so isLegalMove routes through
+    // pawnCaptureShape (single diagonal step only) instead of the widened
+    // pawnShape - a straight two-square shape never matches it, so this is
+    // rejected by the shape check itself, before hasMoved or isPathClear are
+    // even considered.
+    Board b = parseBoard({
+        "bN . .",
+        ". . .",
+        "wP . ."
+    });
+    CHECK_FALSE(isLegalMove(b, makeMove(2, 0, 0, 0, "wP"), 'P'));
+}
+
 TEST_CASE("isLegalMove: a piece may never capture its own color") {
     Board b = parseBoard({"wR wP . ."});
     CHECK_FALSE(isLegalMove(b, makeMove(0, 0, 0, 1, "wR"), 'R'));

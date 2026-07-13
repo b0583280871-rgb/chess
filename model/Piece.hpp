@@ -15,6 +15,7 @@ struct Piece {
     Kind       kind;
     Position   cell;
     PieceState state = PieceState::Idle;
+    bool       hasMoved = false;
 };
 
 class PieceError : public std::runtime_error {
