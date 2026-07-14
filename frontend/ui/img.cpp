@@ -22,7 +22,7 @@ Img& Img::read(const std::string& path,
         int w = img.cols;
 
         if (keep_aspect) {
-            double scale = std::min(static_cast<double>(target_w) / w,
+            double scale = std::min(static_cast<double>(target_w) / w, 
                                    static_cast<double>(target_h) / h);
             int new_w = static_cast<int>(w * scale);
             int new_h = static_cast<int>(h * scale);
@@ -35,15 +35,6 @@ Img& Img::read(const std::string& path,
     return *this;
 }
 
-Img& Img::create(const std::pair<int, int>& size,
-                 const cv::Scalar& color) {
-    if (size.first <= 0 || size.second <= 0) {
-        throw std::runtime_error("Invalid image size");
-    }
-    img = cv::Mat(size.second, size.first, CV_8UC3, color);
-    return *this;
-}
-
 void Img::draw_on(Img& other_img, int x, int y) {
     if (img.empty() || other_img.img.empty()) {
         throw std::runtime_error("Both images must be loaded before drawing.");
@@ -52,7 +43,7 @@ void Img::draw_on(Img& other_img, int x, int y) {
     // Handle different channel counts
     cv::Mat source_img = img;
     cv::Mat target_img = other_img.img;
-
+    
     if (source_img.channels() != target_img.channels()) {
         if (source_img.channels() == 3 && target_img.channels() == 4) {
             cv::cvtColor(source_img, source_img, cv::COLOR_BGR2BGRA);
@@ -77,7 +68,7 @@ void Img::draw_on(Img& other_img, int x, int y) {
         std::vector<cv::Mat> channels;
         cv::split(source_img, channels);
         cv::Mat alpha = channels[3] / 255.0;
-
+        
         for (int c = 0; c < 3; ++c) {
             roi.col(c) = (1.0 - alpha) * roi.col(c) + alpha * channels[c];
         }
@@ -92,7 +83,7 @@ void Img::put_text(const std::string& txt, int x, int y, double font_size,
     if (img.empty()) {
         throw std::runtime_error("Image not loaded.");
     }
-
+    
     cv::putText(img, txt, cv::Point(x, y),
                 cv::FONT_HERSHEY_SIMPLEX, font_size,
                 color, thickness, cv::LINE_AA);
@@ -102,8 +93,8 @@ void Img::show() {
     if (img.empty()) {
         throw std::runtime_error("Image not loaded.");
     }
-
+    
     cv::imshow("Image", img);
     cv::waitKey(0);
     cv::destroyAllWindows();
-}
+} 

@@ -5,22 +5,21 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(chess_game
-    main.cpp
-    model/Board.cpp
-    model/Piece.cpp
-    model/Position.cpp
-    rules/PieceRules.cpp
-    rules/RuleEngine.cpp
-    realtime/RealTimeArbiter.cpp
-    input/BoardMapper.cpp
-    input/Controller.cpp
-    engine/GameEngine.cpp
-    texttests/ScriptRunner.cpp
-    io/BoardParser.cpp
-    io/BoardPrinter.cpp
-    img.cpp
+    backend/chess_main.cpp
+    backend/model/Board.cpp
+    backend/model/Piece.cpp
+    backend/model/Position.cpp
+    backend/rules/PieceRules.cpp
+    backend/rules/RuleEngine.cpp
+    backend/realtime/RealTimeArbiter.cpp
+    backend/input/BoardMapper.cpp
+    backend/input/Controller.cpp
+    backend/engine/GameEngine.cpp
+    backend/texttests/ScriptRunner.cpp
+    backend/io/BoardParser.cpp
+    backend/io/BoardPrinter.cpp
 )
-target_include_directories(chess_game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(chess_game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend)
 
 option(BUILD_TESTS "Build the doctest test suite" ON)
 
@@ -28,26 +27,26 @@ if(BUILD_TESTS)
     enable_testing()
 
     add_executable(chess_tests
-        tests/doctest_main.cpp
-        tests/Config.tests.cpp
-        tests/Board.tests.cpp
-        tests/Movement.tests.cpp
-        tests/Engine.tests.cpp
-        tests/Piece.tests.cpp
-        model/Board.cpp
-        model/Piece.cpp
-        model/Position.cpp
-        rules/PieceRules.cpp
-        rules/RuleEngine.cpp
-        realtime/RealTimeArbiter.cpp
-        input/BoardMapper.cpp
-        input/Controller.cpp
-        engine/GameEngine.cpp
-        texttests/ScriptRunner.cpp
-        io/BoardParser.cpp
-        io/BoardPrinter.cpp
+        backend/tests/doctest_main.cpp
+        backend/tests/Config.tests.cpp
+        backend/tests/Board.tests.cpp
+        backend/tests/Movement.tests.cpp
+        backend/tests/Engine.tests.cpp
+        backend/tests/Piece.tests.cpp
+        backend/model/Board.cpp
+        backend/model/Piece.cpp
+        backend/model/Position.cpp
+        backend/rules/PieceRules.cpp
+        backend/rules/RuleEngine.cpp
+        backend/realtime/RealTimeArbiter.cpp
+        backend/input/BoardMapper.cpp
+        backend/input/Controller.cpp
+        backend/engine/GameEngine.cpp
+        backend/texttests/ScriptRunner.cpp
+        backend/io/BoardParser.cpp
+        backend/io/BoardPrinter.cpp
     )
-    target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} third_party)
+    target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party)
 
     add_test(NAME chess_tests COMMAND chess_tests)
 
@@ -59,46 +58,43 @@ if(BUILD_TESTS)
     endif()
 endif()
 
-    # --- Local OpenCV support (optional) -------------------------------------------------
-    option(USE_LOCAL_OPENCV "Use local OpenCV in OpenCV_451 folder" OFF)
+# --- img_demo: lecturer-provided main.cpp, uses Img/OpenCV -----------------
+add_executable(img_demo
+    frontend/main.cpp
+    frontend/ui/img.cpp
+)
+target_include_directories(img_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
 
-    if(USE_LOCAL_OPENCV)
-        set(OPENCV_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/OpenCV_451-20260714T084200Z-1-001/OpenCV_451")
-        if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
-            message(STATUS "Using local OpenCV at ${OPENCV_ROOT}")
-            target_include_directories(chess_game PRIVATE "${OPENCV_ROOT}/include")
-            set(OPENCV_LIBRARY "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.lib,${OPENCV_ROOT}/bin/opencv_world451.lib>")
-            target_link_libraries(chess_game PRIVATE ${OPENCV_LIBRARY})
+add_custom_command(TARGET img_demo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
+        "$<TARGET_FILE_DIR:img_demo>/assets"
+)
 
-            if(BUILD_TESTS)
-                target_include_directories(chess_tests PRIVATE "${OPENCV_ROOT}/include")
-                target_link_libraries(chess_tests PRIVATE ${OPENCV_LIBRARY})
-            endif()
+# --- Local OpenCV support (optional) -------------------------------------------------
+option(USE_LOCAL_OPENCV "Use local OpenCV in OpenCV_451 folder" OFF)
 
-            # Copy runtime DLLs next to the executables so they run without modifying PATH
-            add_custom_command(TARGET chess_game POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
-                    $<TARGET_FILE_DIR:chess_game>
-            )
-            if(BUILD_TESTS)
-            add_custom_command(TARGET chess_tests POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
-                    $<TARGET_FILE_DIR:chess_tests>
-            )
-            endif()
-        else()
-            message(WARNING "Local OpenCV not found under ${OPENCV_ROOT}; disable USE_LOCAL_OPENCV or place OpenCV there")
-        endif()
+if(USE_LOCAL_OPENCV)
+    set(OPENCV_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/OpenCV_451-20260714T084200Z-1-001/OpenCV_451")
+    if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
+        message(STATUS "Using local OpenCV at ${OPENCV_ROOT}")
+        target_include_directories(img_demo PRIVATE "${OPENCV_ROOT}/include")
+        set(OPENCV_LIBRARY "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.lib,${OPENCV_ROOT}/bin/opencv_world451.lib>")
+        target_link_libraries(img_demo PRIVATE ${OPENCV_LIBRARY})
+
+        # Copy runtime DLLs next to the executable so it runs without modifying PATH
+        add_custom_command(TARGET img_demo POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
+                $<TARGET_FILE_DIR:img_demo>
+        )
     else()
-        find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui)
-        if(OpenCV_FOUND)
-            target_include_directories(chess_game PRIVATE ${OpenCV_INCLUDE_DIRS})
-            target_link_libraries(chess_game PRIVATE ${OpenCV_LIBS})
-            if(BUILD_TESTS)
-                target_include_directories(chess_tests PRIVATE ${OpenCV_INCLUDE_DIRS})
-                target_link_libraries(chess_tests PRIVATE ${OpenCV_LIBS})
-            endif()
-        endif()
+        message(WARNING "Local OpenCV not found under ${OPENCV_ROOT}; disable USE_LOCAL_OPENCV or place OpenCV there")
     endif()
+else()
+    find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui)
+    if(OpenCV_FOUND)
+        target_include_directories(img_demo PRIVATE ${OpenCV_INCLUDE_DIRS})
+        target_link_libraries(img_demo PRIVATE ${OpenCV_LIBS})
+    endif()
+endif()

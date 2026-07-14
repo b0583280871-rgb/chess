@@ -27,3 +27,6 @@ Testing/
 
 # OS
 Thumbs.db
+
+# Vendored OpenCV SDK (not used - see CMakeLists.txt USE_LOCAL_OPENCV; too large for git anyway)
+OpenCV_451/
