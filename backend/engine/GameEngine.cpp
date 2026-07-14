@@ -59,9 +59,6 @@ bool startJump(GameState& st, Position cell) {
         st.arbiter.startJump(cell, st.elapsedMs);
         return true;
     } catch (const RealTimeArbiterError&) {
-        // Rejected - same treatment as any other illegal/blocked move
-        // attempt elsewhere in this codebase: no exception escapes
-        // GameEngine, caller learns via the bool return instead.
         return false;
     }
 }
