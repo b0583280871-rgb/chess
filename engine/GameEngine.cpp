@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "../model/Board.hpp"
+#include "../model/Position.hpp"
 #include "../rules/PieceRules.hpp"
 #include "../rules/RuleEngine.hpp"
 #include "../realtime/RealTimeArbiter.hpp"
@@ -11,21 +12,21 @@ void sendMove(GameState& st, int toRow, int toCol) {
     Selection& sel = st.selection;
 
     if (st.gameOver) {
-        sel = Selection{};
+        sel.clear();
         return;
     }
     if (st.arbiter.hasActiveMotion()) {
-        sel = Selection{};
+        sel.clear();
         return;
     }
     if (st.arbiter.isPieceCurrentlyJumping(sel.cell)) {
-        sel = Selection{};
+        sel.clear();
         return;
     }
 
     std::optional<Piece> movingPiece = st.board.pieceAt(sel.cell);
     if (!movingPiece) {
-        sel = Selection{};
+        sel.clear();
         return;
     }
     const std::string selected = tokenFromPiece(*movingPiece);
@@ -45,21 +46,23 @@ void sendMove(GameState& st, int toRow, int toCol) {
     if (isLegalMove(st.board, m, piece)) {
         st.arbiter.startMotion(m);
     }
-    sel = Selection{};
+    sel.clear();
 }
 
-void startJump(GameState& st, Position cell) {
-    if (st.gameOver) return;
+bool startJump(GameState& st, Position cell) {
+    if (st.gameOver) return false;
 
     std::optional<Piece> piece = st.board.pieceAt(cell);
-    if (!piece) return;
+    if (!piece) return false;
 
     try {
         st.arbiter.startJump(cell, st.elapsedMs);
+        return true;
     } catch (const RealTimeArbiterError&) {
-        // Silently rejected - same treatment as any other illegal/blocked
-        // move attempt elsewhere in this codebase: no error channel, no
-        // exception escapes GameEngine.
+        // Rejected - same treatment as any other illegal/blocked move
+        // attempt elsewhere in this codebase: no exception escapes
+        // GameEngine, caller learns via the bool return instead.
+        return false;
     }
 }
 

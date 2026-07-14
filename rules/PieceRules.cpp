@@ -58,6 +58,17 @@ namespace config {
         return std::abs(dCol) == 1 && dRow == pawnForwardDir(color);
     }
 
+    bool shouldPromote(const Piece& piece, Position to, int boardRows) {
+        if (piece.kind != Kind::Pawn) return false;
+        int lastRow = (pawnForwardDir(colorToChar(piece.color)) < 0) ? 0 : boardRows - 1;
+        return to.row == lastRow;
+    }
+
+    Kind promotionTarget(const Piece& /*piece*/) {
+        // currently always promotes to Queen; extension point for player choice
+        return Kind::Queen;
+    }
+
     std::map<Kind, MoveRule> moveShapes = {
         {Kind::King,   {kingShape,   false}},
         {Kind::Queen,  {queenShape,  true }},

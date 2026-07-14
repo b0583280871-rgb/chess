@@ -9,8 +9,6 @@
 #include "../model/PieceMove.hpp"
 #include "../model/Position.hpp"
 
-double cellDistance(Position a, Position b);
-
 class RealTimeArbiterError : public std::runtime_error {
 public:
     explicit RealTimeArbiterError(const std::string& code)

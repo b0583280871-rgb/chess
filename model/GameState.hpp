@@ -9,6 +9,8 @@ struct Selection {
     bool     active = false;
     Position cell = {0, 0};
     long     selectedAtMs = 0;
+
+    void clear() { *this = Selection{}; }
 };
 
 struct GameState {

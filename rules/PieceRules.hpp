@@ -31,6 +31,9 @@ namespace config {
     bool pawnShape(int dRow, int dCol, char color);
     bool pawnCaptureShape(int dRow, int dCol, char color);
 
+    bool shouldPromote(const Piece& piece, Position to, int boardRows);
+    Kind promotionTarget(const Piece& piece);
+
     struct MoveRule {
         MoveShapeFn shape;
         bool        slides;

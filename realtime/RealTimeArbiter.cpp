@@ -7,12 +7,6 @@
 #include "../model/Board.hpp"
 #include "../rules/PieceRules.hpp"
 
-double cellDistance(Position a, Position b) {
-    double dr = std::abs(b.row - a.row);
-    double dc = std::abs(b.col - a.col);
-    return std::max(dr, dc);
-}
-
 namespace {
     constexpr long JUMP_DURATION_MS = 1000;
 }
@@ -47,11 +41,6 @@ void RealTimeArbiter::startJump(Position cell, long startMs) {
 ArrivalEvent RealTimeArbiter::advanceTime(long elapsedMs, Board& board) {
     ArrivalEvent event;
 
-    // Step A: resolve a due regular move, if any - checking for jump
-    // interception FIRST, before the jump's own timeout is evaluated below.
-    // This ordering matters because a move and a jump can both become due at
-    // the exact same elapsedMs; if we expired the jump first, a same-tick
-    // interception would be missed entirely.
     if (activeMove_ && elapsedMs >= activeMove_->startMs + activeMove_->durationMs) {
         const PieceMove m = *activeMove_;
         std::optional<Piece> movingPiece = board.pieceAt(m.from);
@@ -83,11 +72,8 @@ ArrivalEvent RealTimeArbiter::advanceTime(long elapsedMs, Board& board) {
                     }
                     board.movePiece(m.from, m.to);
 
-                    if (movingPiece->kind == Kind::Pawn) {
-                        int lastRow = (config::pawnForwardDir(colorToChar(movingPiece->color)) < 0) ? 0 : board.rows() - 1;
-                        if (m.to.row == lastRow) {
-                            board.promoteAt(m.to, Kind::Queen);
-                        }
+                    if (config::shouldPromote(*movingPiece, m.to, board.rows())) {
+                        board.promoteAt(m.to, config::promotionTarget(*movingPiece));
                     }
 
                     event.pieceArrived = true;

@@ -4,6 +4,7 @@
 #include "../rules/RuleEngine.hpp"
 #include "../rules/PieceRules.hpp"
 #include "../model/Board.hpp"
+#include "../model/Position.hpp"
 #include "../model/GameState.hpp"
 #include "../model/Piece.hpp"
 #include "../io/BoardParser.hpp"

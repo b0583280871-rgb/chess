@@ -8,6 +8,7 @@ add_executable(chess_game
     main.cpp
     model/Board.cpp
     model/Piece.cpp
+    model/Position.cpp
     rules/PieceRules.cpp
     rules/RuleEngine.cpp
     realtime/RealTimeArbiter.cpp
@@ -34,6 +35,7 @@ if(BUILD_TESTS)
         tests/Piece.tests.cpp
         model/Board.cpp
         model/Piece.cpp
+        model/Position.cpp
         rules/PieceRules.cpp
         rules/RuleEngine.cpp
         realtime/RealTimeArbiter.cpp
