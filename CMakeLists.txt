@@ -33,6 +33,7 @@ if(BUILD_TESTS)
         backend/tests/Movement.tests.cpp
         backend/tests/Engine.tests.cpp
         backend/tests/Piece.tests.cpp
+        backend/tests/SpriteLoader.tests.cpp
         backend/model/Board.cpp
         backend/model/Piece.cpp
         backend/model/Position.cpp
@@ -45,8 +46,10 @@ if(BUILD_TESTS)
         backend/texttests/ScriptRunner.cpp
         backend/io/BoardParser.cpp
         backend/io/BoardPrinter.cpp
+        frontend/ui/img.cpp
+        frontend/view/SpriteLoader.cpp
     )
-    target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party)
+    target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
 
     add_test(NAME chess_tests COMMAND chess_tests)
 
@@ -96,5 +99,58 @@ else()
     if(OpenCV_FOUND)
         target_include_directories(img_demo PRIVATE ${OpenCV_INCLUDE_DIRS})
         target_link_libraries(img_demo PRIVATE ${OpenCV_LIBS})
+    endif()
+endif()
+
+# --- sprite_demo: Step 1 of sprite-loading plan - single static sprite -----
+add_executable(sprite_demo
+    frontend/sprite_demo.cpp
+    frontend/ui/img.cpp
+    frontend/view/SpriteLoader.cpp
+)
+target_include_directories(sprite_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
+
+add_custom_command(TARGET sprite_demo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
+        "$<TARGET_FILE_DIR:sprite_demo>/assets"
+)
+
+if(USE_LOCAL_OPENCV)
+    if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
+        target_include_directories(sprite_demo PRIVATE "${OPENCV_ROOT}/include")
+        target_link_libraries(sprite_demo PRIVATE ${OPENCV_LIBRARY})
+
+        add_custom_command(TARGET sprite_demo POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
+                $<TARGET_FILE_DIR:sprite_demo>
+        )
+    endif()
+else()
+    if(OpenCV_FOUND)
+        target_include_directories(sprite_demo PRIVATE ${OpenCV_INCLUDE_DIRS})
+        target_link_libraries(sprite_demo PRIVATE ${OpenCV_LIBS})
+    endif()
+endif()
+
+# --- chess_tests also needs OpenCV now that it links view/SpriteLoader.cpp -
+if(BUILD_TESTS)
+    if(USE_LOCAL_OPENCV)
+        if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
+            target_include_directories(chess_tests PRIVATE "${OPENCV_ROOT}/include")
+            target_link_libraries(chess_tests PRIVATE ${OPENCV_LIBRARY})
+
+            add_custom_command(TARGET chess_tests POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
+                    $<TARGET_FILE_DIR:chess_tests>
+            )
+        endif()
+    else()
+        if(OpenCV_FOUND)
+            target_include_directories(chess_tests PRIVATE ${OpenCV_INCLUDE_DIRS})
+            target_link_libraries(chess_tests PRIVATE ${OpenCV_LIBS})
+        endif()
     endif()
 endif()
