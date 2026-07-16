@@ -3,6 +3,7 @@
 #include "GameEngine.hpp"
 #include "../rules/config.hpp"
 
+//i have to move to current place and switch to the map
 namespace {
     std::string pieceCodeFromPiece(Color color, Kind kind) {
         char kindChar = 'K';
@@ -32,7 +33,7 @@ namespace GameEngine {
                 Position pos{row, col};
                 std::optional<Piece> piece = state.board.pieceAt(pos);
                 if (!piece) continue;
-                if (piece->state == PieceState::Captured) continue;   // defensive: should not occur on the board
+                if (piece->state == PieceState::Captured) continue; 
 
                 PieceSnapshot ps;
                 ps.pieceCode = pieceCodeFromPiece(piece->color, piece->kind);
