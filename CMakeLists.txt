@@ -34,6 +34,7 @@ if(BUILD_TESTS)
         backend/tests/Engine.tests.cpp
         backend/tests/Piece.tests.cpp
         backend/tests/SpriteLoader.tests.cpp
+        backend/tests/GameSnapshot.tests.cpp
         backend/model/Board.cpp
         backend/model/Piece.cpp
         backend/model/Position.cpp
@@ -48,6 +49,7 @@ if(BUILD_TESTS)
         backend/io/BoardPrinter.cpp
         frontend/ui/img.cpp
         frontend/view/SpriteLoader.cpp
+        frontend/view/GameSnapshot.cpp
     )
     target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
 
@@ -131,6 +133,46 @@ else()
     if(OpenCV_FOUND)
         target_include_directories(sprite_demo PRIVATE ${OpenCV_INCLUDE_DIRS})
         target_link_libraries(sprite_demo PRIVATE ${OpenCV_LIBS})
+    endif()
+endif()
+
+# --- view_demo: Steps 4-5 of sprite-loading plan - static board+piece render -
+add_executable(view_demo
+    frontend/view_demo.cpp
+    frontend/ui/img.cpp
+    frontend/view/SpriteLoader.cpp
+    frontend/view/GameSnapshot.cpp
+    frontend/view/Renderer.cpp
+    backend/model/Board.cpp
+    backend/model/Piece.cpp
+    backend/model/Position.cpp
+    backend/rules/PieceRules.cpp
+    backend/realtime/RealTimeArbiter.cpp
+    backend/io/BoardParser.cpp
+)
+target_include_directories(view_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
+
+add_custom_command(TARGET view_demo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
+        "$<TARGET_FILE_DIR:view_demo>/assets"
+)
+
+if(USE_LOCAL_OPENCV)
+    if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
+        target_include_directories(view_demo PRIVATE "${OPENCV_ROOT}/include")
+        target_link_libraries(view_demo PRIVATE ${OPENCV_LIBRARY})
+
+        add_custom_command(TARGET view_demo POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
+                $<TARGET_FILE_DIR:view_demo>
+        )
+    endif()
+else()
+    if(OpenCV_FOUND)
+        target_include_directories(view_demo PRIVATE ${OpenCV_INCLUDE_DIRS})
+        target_link_libraries(view_demo PRIVATE ${OpenCV_LIBS})
     endif()
 endif()
 

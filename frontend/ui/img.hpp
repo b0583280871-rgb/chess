@@ -21,7 +21,19 @@ public:
               const std::pair<int, int>& size = {},
               bool keep_aspect = false,
               int interpolation = cv::INTER_AREA);
-    
+
+    /**
+     * Create a blank canvas of the given pixel size, filled with a single color.
+     * Uses 4 channels (BGRA) so that draw_on's alpha-blending path applies
+     * correctly when drawing sprites with transparency onto this canvas.
+     *
+     * @param width Canvas width in pixels
+     * @param height Canvas height in pixels
+     * @param color Fill color (BGRA)
+     * @return Reference to this object for method chaining
+     */
+    Img& create(int width, int height, const cv::Scalar& color = cv::Scalar(0, 0, 0, 255));
+
     /**
      * Draw this image onto another image at position (x, y)
      * 

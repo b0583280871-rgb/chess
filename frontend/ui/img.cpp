@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 Img::Img() {
-    // Constructor - img is automatically initialized as empty
 }
 
 Img& Img::read(const std::string& path,
@@ -35,28 +34,21 @@ Img& Img::read(const std::string& path,
     return *this;
 }
 
+Img& Img::create(int width, int height, const cv::Scalar& color) {
+    img = cv::Mat(height, width, CV_8UC4, color);
+    return *this;
+}
+
 void Img::draw_on(Img& other_img, int x, int y) {
     if (img.empty() || other_img.img.empty()) {
         throw std::runtime_error("Both images must be loaded before drawing.");
     }
 
-    // Handle different channel counts
-    cv::Mat source_img = img;
-    cv::Mat target_img = other_img.img;
-    
-    if (source_img.channels() != target_img.channels()) {
-        if (source_img.channels() == 3 && target_img.channels() == 4) {
-            cv::cvtColor(source_img, source_img, cv::COLOR_BGR2BGRA);
-        } else if (source_img.channels() == 4 && target_img.channels() == 3) {
-            cv::cvtColor(source_img, source_img, cv::COLOR_BGRA2BGR);
-        }
-    }
+    const cv::Mat& source_img = img;
+    cv::Mat& target_img = other_img.img;
 
-    int h = source_img.rows;
-    int w = source_img.cols;
-    int H = target_img.rows;
-    int W = target_img.cols;
-
+    int h = source_img.rows, w = source_img.cols;
+    int H = target_img.rows, W = target_img.cols;
     if (y + h > H || x + w > W) {
         throw std::runtime_error("Image does not fit at the specified position.");
     }
@@ -64,17 +56,32 @@ void Img::draw_on(Img& other_img, int x, int y) {
     cv::Mat roi = target_img(cv::Rect(x, y, w, h));
 
     if (source_img.channels() == 4) {
-        // Handle alpha blending for BGRA images
-        std::vector<cv::Mat> channels;
-        cv::split(source_img, channels);
-        cv::Mat alpha = channels[3] / 255.0;
-        
+        // למקור יש אלפא - תמיד לבצע בלנדינג, בלי קשר למספר הערוצים של היעד
+        std::vector<cv::Mat> srcChannels;
+        cv::split(source_img, srcChannels);
+        cv::Mat alpha;
+        srcChannels[3].convertTo(alpha, CV_32FC1, 1.0 / 255.0);
+
+        std::vector<cv::Mat> roiChannels;
+        cv::split(roi, roiChannels);
+
         for (int c = 0; c < 3; ++c) {
-            roi.col(c) = (1.0 - alpha) * roi.col(c) + alpha * channels[c];
+            cv::Mat srcF, dstF, blendedF;
+            srcChannels[c].convertTo(srcF, CV_32FC1);
+            roiChannels[c].convertTo(dstF, CV_32FC1);
+            blendedF = alpha.mul(srcF) + (cv::Scalar(1.0) - alpha).mul(dstF);
+            blendedF.convertTo(roiChannels[c], roiChannels[c].type());
         }
-    } else {
-        // Direct copy for BGR images
+        cv::merge(roiChannels, roi);
+    }
+    else if (source_img.channels() == target_img.channels()) {
         source_img.copyTo(roi);
+    }
+    else {
+        throw std::runtime_error(
+            "draw_on: unsupported channel combination (source has " +
+            std::to_string(source_img.channels()) + " channels, target has " +
+            std::to_string(target_img.channels()) + ").");
     }
 }
 

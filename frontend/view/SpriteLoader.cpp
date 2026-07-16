@@ -1,10 +1,15 @@
 #include "SpriteLoader.hpp"
 
+#include <unordered_map>
+
+#include "../../backend/rules/config.hpp"
+
 namespace SpriteLoader {
 
     Img loadPieceIdleSprite(const std::string& pieceCode) {
         Img img;
-        img.read(PIECES_ROOT + pieceCode + "/states/idle/sprites/1.png");
+        img.read(PIECES_ROOT + pieceCode + "/states/idle/sprites/1.png",
+                 {config::CELL_SIZE, config::CELL_SIZE}, true);
         return img;
     }
 
@@ -20,6 +25,19 @@ namespace SpriteLoader {
         }
         char colorChar = (color == Color::White) ? 'W' : 'B';
         return std::string{kindChar, colorChar};
+    }
+
+    Img& getCachedPieceSprite(const std::string& pieceCode, const std::string& state) {
+        static std::unordered_map<std::string, Img> cache;
+
+        const std::string key = pieceCode + "_" + state;
+        auto it = cache.find(key);
+        if (it != cache.end()) return it->second;
+
+        Img img;
+        img.read(PIECES_ROOT + pieceCode + "/states/" + state + "/sprites/1.png",
+                 {config::CELL_SIZE, config::CELL_SIZE}, true);
+        return cache.emplace(key, std::move(img)).first->second;
     }
 
 }
