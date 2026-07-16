@@ -34,7 +34,7 @@ if(BUILD_TESTS)
         backend/tests/Engine.tests.cpp
         backend/tests/Piece.tests.cpp
         backend/tests/SpriteLoader.tests.cpp
-        backend/tests/GameSnapshot.tests.cpp
+        backend/tests/EngineSnapshot.tests.cpp
         backend/model/Board.cpp
         backend/model/Piece.cpp
         backend/model/Position.cpp
@@ -44,12 +44,12 @@ if(BUILD_TESTS)
         backend/input/BoardMapper.cpp
         backend/input/Controller.cpp
         backend/engine/GameEngine.cpp
+        backend/engine/GameSnapshot.cpp
         backend/texttests/ScriptRunner.cpp
         backend/io/BoardParser.cpp
         backend/io/BoardPrinter.cpp
         frontend/ui/img.cpp
         frontend/view/SpriteLoader.cpp
-        frontend/view/GameSnapshot.cpp
     )
     target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
 
@@ -141,7 +141,6 @@ add_executable(view_demo
     frontend/view_demo.cpp
     frontend/ui/img.cpp
     frontend/view/SpriteLoader.cpp
-    frontend/view/GameSnapshot.cpp
     frontend/view/Renderer.cpp
     backend/model/Board.cpp
     backend/model/Piece.cpp
@@ -149,6 +148,7 @@ add_executable(view_demo
     backend/rules/PieceRules.cpp
     backend/realtime/RealTimeArbiter.cpp
     backend/io/BoardParser.cpp
+    backend/engine/GameSnapshot.cpp
 )
 target_include_directories(view_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
 

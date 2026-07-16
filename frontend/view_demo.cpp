@@ -1,4 +1,4 @@
-#include "view/GameSnapshot.hpp"
+#include "../backend/engine/GameEngine.hpp"
 #include "view/Renderer.hpp"
 #include "../backend/io/BoardParser.hpp"
 #include "../backend/io/BoardFormat.hpp"
@@ -24,7 +24,7 @@ int main() {
         GameState st;
         st.board = parseBoard(sections.boardLines);
 
-        GameSnapshot snapshot = buildSnapshot(st);
+        GameSnapshot snapshot = GameEngine::snapshot(st);
         Img frame = renderFrame(snapshot);
         frame.show();
 

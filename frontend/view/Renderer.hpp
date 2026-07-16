@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../ui/img.hpp"
-#include "GameSnapshot.hpp"
+#include "../../backend/engine/GameSnapshot.hpp"
 
 
 // Draws a single piece's current sprite frame onto the canvas at its

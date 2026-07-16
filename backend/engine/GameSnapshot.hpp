@@ -4,19 +4,17 @@
 #include <string>
 #include <vector>
 
-#include "../../backend/model/GameState.hpp"
+#include "../model/GameState.hpp"
 
 struct PieceSnapshot {
-    std::string pieceCode;    
+    std::string pieceCode;     
     int pixelX, pixelY;        
-    std::string animState;   
+    std::string animState;     
 };
 
 struct GameSnapshot {
     int rows, cols;
     std::vector<PieceSnapshot> pieces;
-    std::optional<Position> selectedCell;   
+    std::optional<Position> selectedCell;  
     bool gameOver;
 };
-
-GameSnapshot buildSnapshot(const GameState& state);

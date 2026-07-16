@@ -1,21 +1,21 @@
 #include "doctest.h"
 
-#include "view/GameSnapshot.hpp"
+#include "../engine/GameEngine.hpp"
 
 #include "../io/BoardParser.hpp"
 
-TEST_CASE("buildSnapshot returns an empty pieces vector for an empty board") {
+TEST_CASE("GameEngine::snapshot returns an empty pieces vector for an empty board") {
     GameState st;
     st.board = parseBoard({". . .", ". . .", ". . ."});
 
-    GameSnapshot snap = buildSnapshot(st);
+    GameSnapshot snap = GameEngine::snapshot(st);
 
     CHECK(snap.rows == 3);
     CHECK(snap.cols == 3);
     CHECK(snap.pieces.empty());
 }
 
-TEST_CASE("buildSnapshot reports the correct pieceCode and pixel position for each piece") {
+TEST_CASE("GameEngine::snapshot reports the correct pieceCode and pixel position for each piece") {
     GameState st;
     st.board = parseBoard({
         "wR . .",
@@ -23,7 +23,7 @@ TEST_CASE("buildSnapshot reports the correct pieceCode and pixel position for ea
         ". . wK"
     });
 
-    GameSnapshot snap = buildSnapshot(st);
+    GameSnapshot snap = GameEngine::snapshot(st);
 
     REQUIRE(snap.pieces.size() == 3);
 
@@ -51,40 +51,40 @@ TEST_CASE("buildSnapshot reports the correct pieceCode and pixel position for ea
     CHECK(king->pixelY == 200);
 }
 
-TEST_CASE("buildSnapshot reports selectedCell when a selection is active") {
+TEST_CASE("GameEngine::snapshot reports selectedCell when a selection is active") {
     GameState st;
     st.board = parseBoard({"wR . .", ". . .", ". . ."});
     st.selection = {true, {1, 2}, 0};
 
-    GameSnapshot snap = buildSnapshot(st);
+    GameSnapshot snap = GameEngine::snapshot(st);
 
     REQUIRE(snap.selectedCell.has_value());
     CHECK(snap.selectedCell->row == 1);
     CHECK(snap.selectedCell->col == 2);
 }
 
-TEST_CASE("buildSnapshot reports nullopt selectedCell when there is no active selection") {
+TEST_CASE("GameEngine::snapshot reports nullopt selectedCell when there is no active selection") {
     GameState st;
     st.board = parseBoard({"wR . .", ". . .", ". . ."});
     // selection.active defaults to false
 
-    GameSnapshot snap = buildSnapshot(st);
+    GameSnapshot snap = GameEngine::snapshot(st);
 
     CHECK_FALSE(snap.selectedCell.has_value());
 }
 
-TEST_CASE("buildSnapshot passes the gameOver flag through unchanged") {
+TEST_CASE("GameEngine::snapshot passes the gameOver flag through unchanged") {
     GameState st;
     st.board = parseBoard({"wR . .", ". . .", ". . ."});
 
     st.gameOver = false;
-    CHECK_FALSE(buildSnapshot(st).gameOver);
+    CHECK_FALSE(GameEngine::snapshot(st).gameOver);
 
     st.gameOver = true;
-    CHECK(buildSnapshot(st).gameOver);
+    CHECK(GameEngine::snapshot(st).gameOver);
 }
 
-TEST_CASE("buildSnapshot skips a piece whose state is Captured") {
+TEST_CASE("GameEngine::snapshot skips a piece whose state is Captured") {
     GameState st;
     st.board = parseBoard({". . .", ". . .", ". . ."});
 
@@ -96,7 +96,7 @@ TEST_CASE("buildSnapshot skips a piece whose state is Captured") {
     captured.state = PieceState::Captured;
     st.board.addPiece(captured);
 
-    GameSnapshot snap = buildSnapshot(st);
+    GameSnapshot snap = GameEngine::snapshot(st);
 
     CHECK(snap.pieces.empty());
 }
