@@ -30,9 +30,11 @@ public:
     ArrivalEvent advanceTime(long elapsedMs, Board& board);
 
     bool hasActiveJump() const;
-    bool isPieceCurrentlyMoving(Position pos) const;   
-    bool isPieceCurrentlyJumping(Position pos) const;  
-    void startJump(Position cell, long startMs);      
+    bool isPieceCurrentlyMoving(Position pos) const;
+    bool isPieceCurrentlyJumping(Position pos) const;
+    void startJump(Position cell, long startMs);
+
+    std::optional<PieceMove> activeMotionForPiece(Position sourceCell) const;
 
 private:
     struct PieceJump {

@@ -32,6 +32,13 @@ bool RealTimeArbiter::isPieceCurrentlyJumping(Position pos) const {
     return activeJump_.has_value() && activeJump_->cell == pos;
 }
 
+std::optional<PieceMove> RealTimeArbiter::activeMotionForPiece(Position sourceCell) const {
+    if (activeMove_.has_value() && activeMove_->from == sourceCell) {
+        return activeMove_;
+    }
+    return std::nullopt;
+}
+
 void RealTimeArbiter::startJump(Position cell, long startMs) {
     if (activeJump_.has_value()) throw RealTimeArbiterError("JUMP_ALREADY_ACTIVE");
     if (isPieceCurrentlyMoving(cell)) throw RealTimeArbiterError("PIECE_ALREADY_MOVING");

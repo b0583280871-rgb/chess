@@ -1,9 +1,10 @@
 #include "GameSnapshot.hpp"
 
+#include <algorithm>
+
 #include "GameEngine.hpp"
 #include "../rules/config.hpp"
 
-//i have to move to current place and switch to the map
 namespace {
     std::string pieceCodeFromPiece(Color color, Kind kind) {
         char kindChar = 'K';
@@ -38,8 +39,24 @@ namespace GameEngine {
                 PieceSnapshot ps;
                 ps.pieceCode = pieceCodeFromPiece(piece->color, piece->kind);
 
-                ps.pixelX = pos.col * config::CELL_SIZE;
-                ps.pixelY = pos.row * config::CELL_SIZE;
+                std::optional<PieceMove> activeMotion = state.arbiter.activeMotionForPiece(piece->cell);
+                if (activeMotion) {
+                    double progress = activeMotion->durationMs > 0
+                        ? (double)(state.elapsedMs - activeMotion->startMs) / activeMotion->durationMs
+                        : 1.0;
+                    progress = std::clamp(progress, 0.0, 1.0);
+
+                    int fromPixelX = activeMotion->from.col * config::CELL_SIZE;
+                    int fromPixelY = activeMotion->from.row * config::CELL_SIZE;
+                    int toPixelX   = activeMotion->to.col   * config::CELL_SIZE;
+                    int toPixelY   = activeMotion->to.row   * config::CELL_SIZE;
+
+                    ps.pixelX = fromPixelX + (int)((toPixelX - fromPixelX) * progress);
+                    ps.pixelY = fromPixelY + (int)((toPixelY - fromPixelY) * progress);
+                } else {
+                    ps.pixelX = pos.col * config::CELL_SIZE;
+                    ps.pixelY = pos.row * config::CELL_SIZE;
+                }
 
                 ps.animState = state.arbiter.isPieceCurrentlyMoving(piece->cell) ? "move" : "idle";
 

@@ -37,6 +37,7 @@ if(BUILD_TESTS)
         backend/tests/Piece.tests.cpp
         backend/tests/SpriteLoader.tests.cpp
         backend/tests/EngineSnapshot.tests.cpp
+        backend/tests/RealTimeArbiter.tests.cpp
         backend/model/Board.cpp
         backend/model/Piece.cpp
         backend/model/Position.cpp

@@ -4,6 +4,30 @@
 
 #include "../io/BoardParser.hpp"
 
+TEST_CASE("GameEngine::snapshot interpolates a piece's pixel position mid-motion") {
+    GameState st;
+    st.board = parseBoard({"wR . .", ". . .", ". . ."});
+
+    PieceMove m;
+    m.from = {0, 0};
+    m.to = {0, 1};
+    m.startMs = 0;
+    m.durationMs = 1000;
+    m.piece = "wR";
+    st.arbiter.startMotion(m);
+
+    st.elapsedMs = 500;   // 50% progress
+
+    GameSnapshot snap = GameEngine::snapshot(st);
+
+    REQUIRE(snap.pieces.size() == 1);
+    const PieceSnapshot& rook = snap.pieces[0];
+
+    CHECK(rook.pixelX == 50);   // halfway between col0 (x=0) and col1 (x=100)
+    CHECK(rook.pixelY == 0);    // same row throughout
+    CHECK(rook.animState == "move");
+}
+
 TEST_CASE("GameEngine::snapshot returns an empty pieces vector for an empty board") {
     GameState st;
     st.board = parseBoard({". . .", ". . .", ". . ."});
