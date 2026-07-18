@@ -3,10 +3,61 @@
 #include "SpriteLoader.hpp"
 #include "../../backend/rules/config.hpp"
 
+namespace {
+    const cv::Scalar SELECTION_HIGHLIGHT_COLOR(0, 0, 255, 255);      // bright red, BGRA
+    const cv::Scalar GAME_OVER_TEXT_COLOR(0, 255, 255, 255);         // bright yellow, BGRA
+    const cv::Scalar GAME_OVER_BACKGROUND_COLOR(20, 20, 20, 255);    // near-black, BGRA
+}
 
 void drawPiece(Img& canvas, const PieceSnapshot& piece) {
     Img& sprite = SpriteLoader::getCachedPieceSprite(piece.pieceCode, piece.animState);
     sprite.draw_on(canvas, piece.pixelX, piece.pixelY);
+}
+
+void drawSelection(Img& canvas, const std::optional<Position>& selectedCell) {
+    if (!selectedCell) return;
+
+    int x = selectedCell->col * config::CELL_SIZE;
+    int y = selectedCell->row * config::CELL_SIZE;
+    const int thickness = 4;
+
+    Img top, bottom, left, right;
+    top.create(config::CELL_SIZE, thickness, SELECTION_HIGHLIGHT_COLOR);
+    bottom.create(config::CELL_SIZE, thickness, SELECTION_HIGHLIGHT_COLOR);
+    left.create(thickness, config::CELL_SIZE, SELECTION_HIGHLIGHT_COLOR);
+    right.create(thickness, config::CELL_SIZE, SELECTION_HIGHLIGHT_COLOR);
+
+    top.draw_on(canvas, x, y);
+    bottom.draw_on(canvas, x, y + config::CELL_SIZE - thickness);
+    left.draw_on(canvas, x, y);
+    right.draw_on(canvas, x + config::CELL_SIZE - thickness, y);
+}
+
+void drawGameOver(Img& canvas, int canvasWidth, int canvasHeight) {
+    const std::string text = "GAME OVER";
+    const double fontScale = 1.8;
+    const int thickness = 3;
+
+    int baseline = 0;
+    cv::Size textSize = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, fontScale, thickness, &baseline);
+
+    int textX = (canvasWidth - textSize.width) / 2;
+    int textY = (canvasHeight + textSize.height) / 2;   // put_text's y is the text baseline
+
+    // Solid background box behind the text, sized to the text plus some
+    // padding, so the message stays readable over the board/pieces beneath.
+    const int paddingX = 24;
+    const int paddingY = 16;
+    int boxWidth  = textSize.width + 2 * paddingX;
+    int boxHeight = textSize.height + baseline + 2 * paddingY;
+    int boxX = (canvasWidth - boxWidth) / 2;
+    int boxY = textY - textSize.height - paddingY;
+
+    Img background;
+    background.create(boxWidth, boxHeight, GAME_OVER_BACKGROUND_COLOR);
+    background.draw_on(canvas, boxX, boxY);
+
+    canvas.put_text(text, textX, textY, fontScale, GAME_OVER_TEXT_COLOR, thickness);
 }
 
 Img renderFrame(const GameSnapshot& snapshot) {
@@ -19,5 +70,12 @@ Img renderFrame(const GameSnapshot& snapshot) {
     for (const PieceSnapshot& piece : snapshot.pieces) {
         drawPiece(canvas, piece);
     }
+
+    drawSelection(canvas, snapshot.selectedCell);
+
+    if (snapshot.gameOver) {
+        drawGameOver(canvas, width, height);
+    }
+
     return canvas;
 }

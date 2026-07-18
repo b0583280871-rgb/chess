@@ -14,7 +14,7 @@ Img& Img::read(const std::string& path,
         throw std::runtime_error("Cannot load image: " + path);
     }
 
-    if (size.first != 0 && size.second != 0) {  // Check if size is not empty
+    if (size.first != 0 && size.second != 0) { 
         int target_w = size.first;
         int target_h = size.second;
         int h = img.rows;
@@ -56,7 +56,6 @@ void Img::draw_on(Img& other_img, int x, int y) {
     cv::Mat roi = target_img(cv::Rect(x, y, w, h));
 
     if (source_img.channels() == 4) {
-        // למקור יש אלפא - תמיד לבצע בלנדינג, בלי קשר למספר הערוצים של היעד
         std::vector<cv::Mat> srcChannels;
         cv::split(source_img, srcChannels);
         cv::Mat alpha;

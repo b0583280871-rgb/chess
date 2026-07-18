@@ -23,10 +23,13 @@ int main() {
 
         GameState st;
         st.board = parseBoard(sections.boardLines);
+        st.selection.active = true;
+        st.selection.cell = {7, 3};   // highlight the white queen's starting square
 
         GameSnapshot snapshot = GameEngine::snapshot(st);
         Img frame = renderFrame(snapshot);
         frame.show();
+
 
         return 0;
     } catch (const std::exception& e) {
