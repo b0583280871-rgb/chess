@@ -6,22 +6,8 @@ project(chess_game CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# --- Networking dependencies (WebSocket connectivity smoke test) -----------
-# websocketpp is header-only (no precompiled binaries), and we pair it with
-# standalone Asio (header-only, non-Boost) rather than Boost.Asio to avoid
-# both a Boost install and the MSVC/MinGW ABI-mismatch class of problem that
-# the manually-downloaded OpenCV_451 folder previously caused. Both are
-# fetched from source via FetchContent so nothing needs to be manually
-# downloaded/placed by hand. FetchContent_Populate (not MakeAvailable) is
-# used deliberately: neither library's own CMakeLists.txt is invoked, since
-# websocketpp's pulls in Boost/test targets we don't need - we only want
-# their headers on the include path.
 include(FetchContent)
 
-# Deliberately using the FetchContent_Populate (source-only, no
-# add_subdirectory) form rather than FetchContent_MakeAvailable, since we
-# only want these libraries' headers, not their own CMake-built targets -
-# silence the "call MakeAvailable instead" dev warning that choice produces.
 if(POLICY CMP0169)
     cmake_policy(SET CMP0169 OLD)
 endif()
@@ -100,6 +86,8 @@ if(BUILD_TESTS)
         backend/tests/RealTimeArbiter.tests.cpp
         backend/tests/SpriteAnimation.tests.cpp
         backend/tests/Protocol.tests.cpp
+        backend/tests/ProtocolJson.tests.cpp
+        network/protocol/JsonCodec.cpp
         backend/model/Board.cpp
         backend/model/Piece.cpp
         backend/model/Position.cpp
@@ -116,7 +104,7 @@ if(BUILD_TESTS)
         frontend/ui/img.cpp
         frontend/view/SpriteLoader.cpp
     )
-    target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party ${CMAKE_CURRENT_SOURCE_DIR}/frontend ${CMAKE_CURRENT_SOURCE_DIR})
+    target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party ${CMAKE_CURRENT_SOURCE_DIR}/frontend ${CMAKE_CURRENT_SOURCE_DIR} ${NLOHMANN_JSON_INCLUDE_DIR})
 
     add_test(NAME chess_tests COMMAND chess_tests)
 
@@ -250,7 +238,6 @@ else()
     endif()
 endif()
 
-# --- live_demo: Step 10 - live render loop (no mouse input yet) ------------
 add_executable(live_demo
     frontend/live_demo.cpp
     frontend/ui/img.cpp
@@ -294,7 +281,6 @@ else()
     endif()
 endif()
 
-# --- chess_tests also needs OpenCV now that it links view/SpriteLoader.cpp -
 if(BUILD_TESTS)
     if(USE_LOCAL_OPENCV)
         if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
@@ -315,27 +301,31 @@ if(BUILD_TESTS)
     endif()
 endif()
 
-# --- ws_echo_server / ws_echo_client: WebSocket connectivity smoke test ----
-# Pure new infrastructure - no dependency on any existing target or source
-# file. Header-only websocketpp + standalone Asio, so just include dirs and
-# a couple of compile definitions; no TLS/SSL in this step (plain ws://).
 add_executable(ws_echo_server network/ws_echo_server.cpp)
 add_executable(ws_echo_client network/ws_echo_client.cpp)
 
-foreach(ws_target ws_echo_server ws_echo_client)
+add_executable(protocol_demo_server
+    network/protocol_demo_server.cpp
+    network/protocol/JsonCodec.cpp
+)
+add_executable(protocol_demo_client
+    network/protocol_demo_client.cpp
+    network/protocol/JsonCodec.cpp
+)
+target_include_directories(protocol_demo_server PRIVATE ${NLOHMANN_JSON_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(protocol_demo_client PRIVATE ${NLOHMANN_JSON_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+
+foreach(ws_target ws_echo_server ws_echo_client protocol_demo_server protocol_demo_client)
     target_include_directories(${ws_target} PRIVATE ${WEBSOCKETPP_INCLUDE_DIR} ${ASIO_INCLUDE_DIR})
     target_compile_definitions(${ws_target} PRIVATE
-        ASIO_STANDALONE             # standalone (non-Boost) Asio mode
-        _WEBSOCKETPP_CPP11_STL_     # tell websocketpp to use std:: (not Boost) where it auto-detects C++11
-        _WEBSOCKETPP_CPP11_THREAD_  # websocketpp assumes MinGW lacks C++11 <thread>/<mutex> by default
-                                    # (true for very old MinGW32); this MinGW toolchain has full support,
-                                    # so force it rather than silently falling back to requiring Boost.Thread
+        ASIO_STANDALONE            
+        _WEBSOCKETPP_CPP11_STL_    
+        _WEBSOCKETPP_CPP11_THREAD_ 
+                                   
+                                   
     )
 
     if(WIN32)
-        # Asio needs to know the target Windows API version on MinGW, or it
-        # errors out at compile time; Winsock libraries are needed for the
-        # actual socket calls it makes.
         target_compile_definitions(${ws_target} PRIVATE _WIN32_WINNT=0x0601)
         target_link_libraries(${ws_target} PRIVATE ws2_32 wsock32 mswsock)
     endif()
