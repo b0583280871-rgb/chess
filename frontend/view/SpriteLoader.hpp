@@ -15,4 +15,7 @@ namespace SpriteLoader {
 
     Img& getCachedPieceSprite(const std::string& pieceCode, const std::string& state);
 
+    // Loads/caches a specific 1-based animation frame for (pieceCode, state).
+    Img& getCachedPieceFrame(const std::string& pieceCode, const std::string& state, int frameIndex);
+
 }

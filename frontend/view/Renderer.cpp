@@ -10,7 +10,7 @@ namespace {
 }
 
 void drawPiece(Img& canvas, const PieceSnapshot& piece) {
-    Img& sprite = SpriteLoader::getCachedPieceSprite(piece.pieceCode, piece.animState);
+    Img& sprite = SpriteLoader::getCachedPieceFrame(piece.pieceCode, piece.animState, piece.frameIndex);
     sprite.draw_on(canvas, piece.pixelX, piece.pixelY);
 }
 

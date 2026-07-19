@@ -38,6 +38,7 @@ if(BUILD_TESTS)
         backend/tests/SpriteLoader.tests.cpp
         backend/tests/EngineSnapshot.tests.cpp
         backend/tests/RealTimeArbiter.tests.cpp
+        backend/tests/SpriteAnimation.tests.cpp
         backend/model/Board.cpp
         backend/model/Piece.cpp
         backend/model/Position.cpp
@@ -57,6 +58,15 @@ if(BUILD_TESTS)
     target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
 
     add_test(NAME chess_tests COMMAND chess_tests)
+
+    # GameEngine::snapshot now reads real config.json/sprite files from
+    # assets/pieces_classic/ at runtime (frame-index computation), so
+    # chess_tests needs the same asset copy the demo targets already get.
+    add_custom_command(TARGET chess_tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
+            "$<TARGET_FILE_DIR:chess_tests>/assets"
+    )
 
     option(ENABLE_COVERAGE "Build chess_tests with coverage instrumentation" OFF)
 
