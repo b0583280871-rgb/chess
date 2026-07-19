@@ -35,11 +35,6 @@ endif()
 set(WEBSOCKETPP_INCLUDE_DIR ${websocketpp_SOURCE_DIR})
 set(ASIO_INCLUDE_DIR ${asio_SOURCE_DIR}/asio/include)
 
-# nlohmann/json - header-only, single-include, MIT license. Fetched the same
-# way as websocketpp/asio (FetchContent_Populate, no add_subdirectory) so
-# there's nothing to manually download. Not wired into any target's JSON
-# serialization yet in this step - just made available on the include path
-# for whichever target needs it in a later step.
 FetchContent_Declare(
     nlohmann_json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
@@ -107,10 +102,6 @@ if(BUILD_TESTS)
     target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party ${CMAKE_CURRENT_SOURCE_DIR}/frontend ${CMAKE_CURRENT_SOURCE_DIR} ${NLOHMANN_JSON_INCLUDE_DIR})
 
     add_test(NAME chess_tests COMMAND chess_tests)
-
-    # GameEngine::snapshot now reads real config.json/sprite files from
-    # assets/pieces_classic/ at runtime (frame-index computation), so
-    # chess_tests needs the same asset copy the demo targets already get.
     add_custom_command(TARGET chess_tests POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
@@ -125,45 +116,18 @@ if(BUILD_TESTS)
     endif()
 endif()
 
-# --- img_demo: lecturer-provided main.cpp, uses Img/OpenCV -----------------
-add_executable(img_demo
-    frontend/main.cpp
-    frontend/ui/img.cpp
-)
-target_include_directories(img_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
-
-add_custom_command(TARGET img_demo POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
-        "$<TARGET_FILE_DIR:img_demo>/assets"
-)
-
-# --- Local OpenCV support (optional) -------------------------------------------------
 option(USE_LOCAL_OPENCV "Use local OpenCV in OpenCV_451 folder" OFF)
 
 if(USE_LOCAL_OPENCV)
     set(OPENCV_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/OpenCV_451-20260714T084200Z-1-001/OpenCV_451")
     if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
         message(STATUS "Using local OpenCV at ${OPENCV_ROOT}")
-        target_include_directories(img_demo PRIVATE "${OPENCV_ROOT}/include")
         set(OPENCV_LIBRARY "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.lib,${OPENCV_ROOT}/bin/opencv_world451.lib>")
-        target_link_libraries(img_demo PRIVATE ${OPENCV_LIBRARY})
-
-        # Copy runtime DLLs next to the executable so it runs without modifying PATH
-        add_custom_command(TARGET img_demo POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
-                $<TARGET_FILE_DIR:img_demo>
-        )
     else()
         message(WARNING "Local OpenCV not found under ${OPENCV_ROOT}; disable USE_LOCAL_OPENCV or place OpenCV there")
     endif()
 else()
     find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui)
-    if(OpenCV_FOUND)
-        target_include_directories(img_demo PRIVATE ${OpenCV_INCLUDE_DIRS})
-        target_link_libraries(img_demo PRIVATE ${OpenCV_LIBS})
-    endif()
 endif()
 
 # --- sprite_demo: Step 1 of sprite-loading plan - single static sprite -----
@@ -195,46 +159,6 @@ else()
     if(OpenCV_FOUND)
         target_include_directories(sprite_demo PRIVATE ${OpenCV_INCLUDE_DIRS})
         target_link_libraries(sprite_demo PRIVATE ${OpenCV_LIBS})
-    endif()
-endif()
-
-# --- view_demo: Steps 4-5 of sprite-loading plan - static board+piece render -
-add_executable(view_demo
-    frontend/view_demo.cpp
-    frontend/ui/img.cpp
-    frontend/view/SpriteLoader.cpp
-    frontend/view/Renderer.cpp
-    backend/model/Board.cpp
-    backend/model/Piece.cpp
-    backend/model/Position.cpp
-    backend/rules/PieceRules.cpp
-    backend/realtime/RealTimeArbiter.cpp
-    backend/io/BoardParser.cpp
-    backend/engine/GameSnapshot.cpp
-)
-target_include_directories(view_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
-
-add_custom_command(TARGET view_demo POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
-        "$<TARGET_FILE_DIR:view_demo>/assets"
-)
-
-if(USE_LOCAL_OPENCV)
-    if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
-        target_include_directories(view_demo PRIVATE "${OPENCV_ROOT}/include")
-        target_link_libraries(view_demo PRIVATE ${OPENCV_LIBRARY})
-
-        add_custom_command(TARGET view_demo POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
-                $<TARGET_FILE_DIR:view_demo>
-        )
-    endif()
-else()
-    if(OpenCV_FOUND)
-        target_include_directories(view_demo PRIVATE ${OpenCV_INCLUDE_DIRS})
-        target_link_libraries(view_demo PRIVATE ${OpenCV_LIBS})
     endif()
 endif()
 
@@ -301,9 +225,6 @@ if(BUILD_TESTS)
     endif()
 endif()
 
-add_executable(ws_echo_server network/ws_echo_server.cpp)
-add_executable(ws_echo_client network/ws_echo_client.cpp)
-
 add_executable(protocol_demo_server
     network/protocol_demo_server.cpp
     network/protocol/JsonCodec.cpp
@@ -315,14 +236,62 @@ add_executable(protocol_demo_client
 target_include_directories(protocol_demo_server PRIVATE ${NLOHMANN_JSON_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(protocol_demo_client PRIVATE ${NLOHMANN_JSON_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
-foreach(ws_target ws_echo_server ws_echo_client protocol_demo_server protocol_demo_client)
+add_executable(game_server
+    network/game_server.cpp
+    network/protocol/JsonCodec.cpp
+    backend/model/Board.cpp
+    backend/model/Piece.cpp
+    backend/model/Position.cpp
+    backend/rules/PieceRules.cpp
+    backend/rules/RuleEngine.cpp
+    backend/realtime/RealTimeArbiter.cpp
+    backend/input/BoardMapper.cpp
+    backend/input/Controller.cpp
+    backend/io/BoardParser.cpp
+    backend/engine/GameSnapshot.cpp
+    backend/engine/GameEngine.cpp
+)
+target_include_directories(game_server PRIVATE ${WEBSOCKETPP_INCLUDE_DIR} ${ASIO_INCLUDE_DIR} ${NLOHMANN_JSON_INCLUDE_DIR})
+
+add_executable(game_client
+    network/game_client.cpp
+    network/protocol/JsonCodec.cpp
+    frontend/ui/img.cpp
+    frontend/view/SpriteLoader.cpp
+    frontend/view/Renderer.cpp
+)
+target_include_directories(game_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend ${WEBSOCKETPP_INCLUDE_DIR} ${ASIO_INCLUDE_DIR} ${NLOHMANN_JSON_INCLUDE_DIR})
+
+if(USE_LOCAL_OPENCV)
+    if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
+        target_include_directories(game_client PRIVATE "${OPENCV_ROOT}/include")
+        target_link_libraries(game_client PRIVATE ${OPENCV_LIBRARY})
+
+        add_custom_command(TARGET game_client POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
+                $<TARGET_FILE_DIR:game_client>
+        )
+    endif()
+else()
+    if(OpenCV_FOUND)
+        target_include_directories(game_client PRIVATE ${OpenCV_INCLUDE_DIRS})
+        target_link_libraries(game_client PRIVATE ${OpenCV_LIBS})
+    endif()
+endif()
+
+add_custom_command(TARGET game_client POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
+        "$<TARGET_FILE_DIR:game_client>/assets"
+)
+
+foreach(ws_target protocol_demo_server protocol_demo_client game_server game_client)
     target_include_directories(${ws_target} PRIVATE ${WEBSOCKETPP_INCLUDE_DIR} ${ASIO_INCLUDE_DIR})
     target_compile_definitions(${ws_target} PRIVATE
-        ASIO_STANDALONE            
-        _WEBSOCKETPP_CPP11_STL_    
-        _WEBSOCKETPP_CPP11_THREAD_ 
-                                   
-                                   
+        ASIO_STANDALONE
+        _WEBSOCKETPP_CPP11_STL_
+        _WEBSOCKETPP_CPP11_THREAD_
     )
 
     if(WIN32)
