@@ -6,6 +6,49 @@ project(chess_game CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# --- Networking dependencies (WebSocket connectivity smoke test) -----------
+# websocketpp is header-only (no precompiled binaries), and we pair it with
+# standalone Asio (header-only, non-Boost) rather than Boost.Asio to avoid
+# both a Boost install and the MSVC/MinGW ABI-mismatch class of problem that
+# the manually-downloaded OpenCV_451 folder previously caused. Both are
+# fetched from source via FetchContent so nothing needs to be manually
+# downloaded/placed by hand. FetchContent_Populate (not MakeAvailable) is
+# used deliberately: neither library's own CMakeLists.txt is invoked, since
+# websocketpp's pulls in Boost/test targets we don't need - we only want
+# their headers on the include path.
+include(FetchContent)
+
+# Deliberately using the FetchContent_Populate (source-only, no
+# add_subdirectory) form rather than FetchContent_MakeAvailable, since we
+# only want these libraries' headers, not their own CMake-built targets -
+# silence the "call MakeAvailable instead" dev warning that choice produces.
+if(POLICY CMP0169)
+    cmake_policy(SET CMP0169 OLD)
+endif()
+
+FetchContent_Declare(
+    websocketpp
+    GIT_REPOSITORY https://github.com/zaphoyd/websocketpp.git
+    GIT_TAG        master
+)
+FetchContent_GetProperties(websocketpp)
+if(NOT websocketpp_POPULATED)
+    FetchContent_Populate(websocketpp)
+endif()
+
+FetchContent_Declare(
+    asio
+    GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
+    GIT_TAG        asio-1-30-2
+)
+FetchContent_GetProperties(asio)
+if(NOT asio_POPULATED)
+    FetchContent_Populate(asio)
+endif()
+
+set(WEBSOCKETPP_INCLUDE_DIR ${websocketpp_SOURCE_DIR})
+set(ASIO_INCLUDE_DIR ${asio_SOURCE_DIR}/asio/include)
+
 add_executable(chess_game
     backend/chess_main.cpp
     backend/model/Board.cpp
@@ -253,3 +296,29 @@ if(BUILD_TESTS)
         endif()
     endif()
 endif()
+
+# --- ws_echo_server / ws_echo_client: WebSocket connectivity smoke test ----
+# Pure new infrastructure - no dependency on any existing target or source
+# file. Header-only websocketpp + standalone Asio, so just include dirs and
+# a couple of compile definitions; no TLS/SSL in this step (plain ws://).
+add_executable(ws_echo_server network/ws_echo_server.cpp)
+add_executable(ws_echo_client network/ws_echo_client.cpp)
+
+foreach(ws_target ws_echo_server ws_echo_client)
+    target_include_directories(${ws_target} PRIVATE ${WEBSOCKETPP_INCLUDE_DIR} ${ASIO_INCLUDE_DIR})
+    target_compile_definitions(${ws_target} PRIVATE
+        ASIO_STANDALONE             # standalone (non-Boost) Asio mode
+        _WEBSOCKETPP_CPP11_STL_     # tell websocketpp to use std:: (not Boost) where it auto-detects C++11
+        _WEBSOCKETPP_CPP11_THREAD_  # websocketpp assumes MinGW lacks C++11 <thread>/<mutex> by default
+                                    # (true for very old MinGW32); this MinGW toolchain has full support,
+                                    # so force it rather than silently falling back to requiring Boost.Thread
+    )
+
+    if(WIN32)
+        # Asio needs to know the target Windows API version on MinGW, or it
+        # errors out at compile time; Winsock libraries are needed for the
+        # actual socket calls it makes.
+        target_compile_definitions(${ws_target} PRIVATE _WIN32_WINNT=0x0601)
+        target_link_libraries(${ws_target} PRIVATE ws2_32 wsock32 mswsock)
+    endif()
+endforeach()
