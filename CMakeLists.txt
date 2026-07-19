@@ -179,6 +179,50 @@ else()
     endif()
 endif()
 
+# --- live_demo: Step 10 - live render loop (no mouse input yet) ------------
+add_executable(live_demo
+    frontend/live_demo.cpp
+    frontend/ui/img.cpp
+    frontend/view/SpriteLoader.cpp
+    frontend/view/Renderer.cpp
+    backend/model/Board.cpp
+    backend/model/Piece.cpp
+    backend/model/Position.cpp
+    backend/rules/PieceRules.cpp
+    backend/rules/RuleEngine.cpp
+    backend/realtime/RealTimeArbiter.cpp
+    backend/input/BoardMapper.cpp
+    backend/input/Controller.cpp
+    backend/io/BoardParser.cpp
+    backend/engine/GameSnapshot.cpp
+    backend/engine/GameEngine.cpp
+)
+target_include_directories(live_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
+
+add_custom_command(TARGET live_demo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
+        "$<TARGET_FILE_DIR:live_demo>/assets"
+)
+
+if(USE_LOCAL_OPENCV)
+    if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
+        target_include_directories(live_demo PRIVATE "${OPENCV_ROOT}/include")
+        target_link_libraries(live_demo PRIVATE ${OPENCV_LIBRARY})
+
+        add_custom_command(TARGET live_demo POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
+                $<TARGET_FILE_DIR:live_demo>
+        )
+    endif()
+else()
+    if(OpenCV_FOUND)
+        target_include_directories(live_demo PRIVATE ${OpenCV_INCLUDE_DIRS})
+        target_link_libraries(live_demo PRIVATE ${OpenCV_LIBS})
+    endif()
+endif()
+
 # --- chess_tests also needs OpenCV now that it links view/SpriteLoader.cpp -
 if(BUILD_TESTS)
     if(USE_LOCAL_OPENCV)
