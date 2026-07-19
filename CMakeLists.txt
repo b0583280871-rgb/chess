@@ -49,6 +49,23 @@ endif()
 set(WEBSOCKETPP_INCLUDE_DIR ${websocketpp_SOURCE_DIR})
 set(ASIO_INCLUDE_DIR ${asio_SOURCE_DIR}/asio/include)
 
+# nlohmann/json - header-only, single-include, MIT license. Fetched the same
+# way as websocketpp/asio (FetchContent_Populate, no add_subdirectory) so
+# there's nothing to manually download. Not wired into any target's JSON
+# serialization yet in this step - just made available on the include path
+# for whichever target needs it in a later step.
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.11.3
+)
+FetchContent_GetProperties(nlohmann_json)
+if(NOT nlohmann_json_POPULATED)
+    FetchContent_Populate(nlohmann_json)
+endif()
+
+set(NLOHMANN_JSON_INCLUDE_DIR ${nlohmann_json_SOURCE_DIR}/single_include)
+
 add_executable(chess_game
     backend/chess_main.cpp
     backend/model/Board.cpp
@@ -82,6 +99,7 @@ if(BUILD_TESTS)
         backend/tests/EngineSnapshot.tests.cpp
         backend/tests/RealTimeArbiter.tests.cpp
         backend/tests/SpriteAnimation.tests.cpp
+        backend/tests/Protocol.tests.cpp
         backend/model/Board.cpp
         backend/model/Piece.cpp
         backend/model/Position.cpp
@@ -98,7 +116,7 @@ if(BUILD_TESTS)
         frontend/ui/img.cpp
         frontend/view/SpriteLoader.cpp
     )
-    target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
+    target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party ${CMAKE_CURRENT_SOURCE_DIR}/frontend ${CMAKE_CURRENT_SOURCE_DIR})
 
     add_test(NAME chess_tests COMMAND chess_tests)
 
