@@ -4,6 +4,7 @@ namespace protocol {
 
 enum class MessageType {
     Login,
+    Register,
     CreateRoom,
     JoinRoom,
     QuickPlay,
@@ -11,6 +12,7 @@ enum class MessageType {
     Leave,
 
     LoginResult,
+    RegisterResult,
     RoomJoined,
     MatchmakingResult,
     Snapshot,

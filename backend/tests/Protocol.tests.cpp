@@ -13,6 +13,12 @@ TEST_CASE("LoginMessage holds its fields") {
     CHECK(msg.password == "hunter2");
 }
 
+TEST_CASE("RegisterMessage holds its fields") {
+    RegisterMessage msg{"alice@example.com", "hunter2"};
+    CHECK(msg.email == "alice@example.com");
+    CHECK(msg.password == "hunter2");
+}
+
 TEST_CASE("CreateRoomMessage holds its field") {
     CreateRoomMessage msg{"alices-room"};
     CHECK(msg.room_name == "alices-room");
@@ -55,6 +61,18 @@ TEST_CASE("LoginResultMessage holds failure and reason, no rating") {
     REQUIRE(msg.reason.has_value());
     CHECK(msg.reason.value() == "invalid_credentials");
     CHECK_FALSE(msg.rating.has_value());
+}
+
+TEST_CASE("RegisterResultMessage holds success and an empty reason") {
+    RegisterResultMessage msg{true, ""};
+    CHECK(msg.success);
+    CHECK(msg.reason.empty());
+}
+
+TEST_CASE("RegisterResultMessage holds failure and a reason") {
+    RegisterResultMessage msg{false, "email_taken"};
+    CHECK_FALSE(msg.success);
+    CHECK(msg.reason == "email_taken");
 }
 
 TEST_CASE("RoomJoinedMessage holds its fields") {

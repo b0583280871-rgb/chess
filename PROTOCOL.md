@@ -38,6 +38,19 @@ Authenticate a user before any room/matchmaking action.
 {"type": "login", "payload": {"username": "alice", "password": "hunter2"}}
 ```
 
+### `register`
+Create a new account with the given email/password. Does not log the new
+account in - a separate `login` message is still required afterward.
+
+| field      | type   |
+|------------|--------|
+| `email`    | string |
+| `password` | string |
+
+```json
+{"type": "register", "payload": {"email": "alice@example.com", "password": "hunter2"}}
+```
+
 ### `create_room`
 Create a new named room and join it as its first player (white).
 
@@ -110,6 +123,24 @@ Reports whether a `login` attempt succeeded.
 ```
 ```json
 {"type": "login_result", "payload": {"success": false, "reason": "invalid_credentials"}}
+```
+
+### `register_result`
+Reports whether a `register` attempt succeeded. Unlike `login_result`,
+`reason` is always present (an empty string on success) rather than
+optional, since there's no second field (like `rating`) to distinguish the
+two cases by presence.
+
+| field     | type   | notes                                   |
+|-----------|--------|-------------------------------------------|
+| `success` | bool   |                                            |
+| `reason`  | string | empty on success; e.g. `"email_taken"` on failure |
+
+```json
+{"type": "register_result", "payload": {"success": true, "reason": ""}}
+```
+```json
+{"type": "register_result", "payload": {"success": false, "reason": "email_taken"}}
 ```
 
 ### `room_joined`

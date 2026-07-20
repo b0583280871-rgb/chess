@@ -45,6 +45,14 @@ void from_json(const nlohmann::json& j, LoginMessage& m) {
     j.at("password").get_to(m.password);
 }
 
+void to_json(nlohmann::json& j, const RegisterMessage& m) {
+    j = nlohmann::json{{"email", m.email}, {"password", m.password}};
+}
+void from_json(const nlohmann::json& j, RegisterMessage& m) {
+    j.at("email").get_to(m.email);
+    j.at("password").get_to(m.password);
+}
+
 void to_json(nlohmann::json& j, const CreateRoomMessage& m) {
     j = nlohmann::json{{"room_name", m.room_name}};
 }
@@ -91,6 +99,14 @@ void from_json(const nlohmann::json& j, LoginResultMessage& m) {
     j.at("success").get_to(m.success);
     m.reason = getOmittable<std::string>(j, "reason");
     m.rating = getOmittable<int>(j, "rating");
+}
+
+void to_json(nlohmann::json& j, const RegisterResultMessage& m) {
+    j = nlohmann::json{{"success", m.success}, {"reason", m.reason}};
+}
+void from_json(const nlohmann::json& j, RegisterResultMessage& m) {
+    j.at("success").get_to(m.success);
+    j.at("reason").get_to(m.reason);
 }
 
 void to_json(nlohmann::json& j, const RoomJoinedMessage& m) {

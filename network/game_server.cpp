@@ -106,7 +106,27 @@ int main() {
                 return;
             }
 
-            if (type == "login") {
+            if (type == "register") {
+                nlohmann::json parsed = nlohmann::json::parse(rawText);
+                protocol::RegisterMessage reg = parsed.at("payload").get<protocol::RegisterMessage>();
+
+                // Never log the password - only the email and the outcome.
+                std::cout << "Register attempt for email: " << reg.email << std::endl;
+
+                RegisterResult result = registerUser(userDb, reg.email, reg.password);
+
+                protocol::RegisterResultMessage resultMsg{result.success, result.reason};
+                nlohmann::json resultPayload = resultMsg;
+                sendTo(hdl, "register_result", resultPayload);
+
+                if (result.success) {
+                    std::cout << "Register succeeded for email: " << reg.email << std::endl;
+                } else {
+                    std::cout << "Register failed for email: " << reg.email
+                              << ", reason: " << result.reason << std::endl;
+                }
+
+            } else if (type == "login") {
                 nlohmann::json parsed = nlohmann::json::parse(rawText);
                 protocol::LoginMessage login = parsed.at("payload").get<protocol::LoginMessage>();
 

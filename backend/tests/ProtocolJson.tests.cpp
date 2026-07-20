@@ -34,6 +34,14 @@ TEST_CASE("LoginMessage round-trips through JSON") {
     CHECK(decoded.password == original.password);
 }
 
+TEST_CASE("RegisterMessage round-trips through JSON") {
+    RegisterMessage original{"alice@example.com", "hunter2"};
+    RegisterMessage decoded = roundTrip(original, "register");
+
+    CHECK(decoded.email == original.email);
+    CHECK(decoded.password == original.password);
+}
+
 TEST_CASE("CreateRoomMessage round-trips through JSON") {
     CreateRoomMessage original{"alices-room"};
     CreateRoomMessage decoded = roundTrip(original, "create_room");
@@ -106,6 +114,22 @@ TEST_CASE("LoginResultMessage round-trips through JSON (failure, with reason, no
     REQUIRE(decoded.reason.has_value());
     CHECK(decoded.reason.value() == "invalid_credentials");
     CHECK_FALSE(decoded.rating.has_value());
+}
+
+TEST_CASE("RegisterResultMessage round-trips through JSON (success)") {
+    RegisterResultMessage original{true, ""};
+    RegisterResultMessage decoded = roundTrip(original, "register_result");
+
+    CHECK(decoded.success);
+    CHECK(decoded.reason.empty());
+}
+
+TEST_CASE("RegisterResultMessage round-trips through JSON (failure, with reason)") {
+    RegisterResultMessage original{false, "email_taken"};
+    RegisterResultMessage decoded = roundTrip(original, "register_result");
+
+    CHECK_FALSE(decoded.success);
+    CHECK(decoded.reason == "email_taken");
 }
 
 TEST_CASE("RoomJoinedMessage round-trips through JSON") {
