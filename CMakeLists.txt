@@ -250,6 +250,7 @@ target_include_directories(game_server PRIVATE ${SQLITE3_SOURCE_DIR} ${PICOSHA2_
 
 add_executable(game_client
     network/game_client.cpp
+    network/win32_ui/LoginWindow.cpp
     network/protocol/JsonCodec.cpp
     frontend/ui/img.cpp
     frontend/view/SpriteLoader.cpp

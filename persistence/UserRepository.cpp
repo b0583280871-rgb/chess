@@ -52,10 +52,6 @@ RegisterResult registerUser(Database& db, const std::string& email, const std::s
     std::string salt = generateSalt();
     std::string hash = hashPassword(password, salt);
 
-    // "username" has no separate value anywhere in the current API (only
-    // email+password flow through registerUser) - mirroring email into it
-    // satisfies the column's NOT NULL constraint. If a real, distinct
-    // display-name field is wanted, registerUser needs a third parameter.
     const char* sql = "INSERT INTO users (email, username, password_hash, salt, rating) VALUES (?, ?, ?, ?, 1200);";
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db.handle(), sql, -1, &stmt, nullptr) != SQLITE_OK) {

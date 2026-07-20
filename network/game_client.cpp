@@ -1,4 +1,6 @@
 
+#include "win32_ui/LoginWindow.hpp"
+
 #include <websocketpp/config/asio_no_tls_client.hpp>
 #include <websocketpp/client.hpp>
 
@@ -46,6 +48,13 @@ namespace {
 
         ctx->c->send(ctx->hdl, envelope.dump(), websocketpp::frame::opcode::text);
     }
+
+    enum class FlowState {
+        Idle,
+        LoginRequested,
+        RegisterRequested,
+        WaitingForResponse,
+    };
 }
 
 int main() {
@@ -143,70 +152,88 @@ int main() {
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
-        std::string email;
-        std::string password;
-
-        while (true) {
-            std::cout << "Login or Register? (l/r): ";
-            std::string choiceLine;
-            std::getline(std::cin, choiceLine);
-            choiceLine = trim(choiceLine);
-            char choice = choiceLine.empty() ? 'l' : (char)std::tolower((unsigned char)choiceLine[0]);
-
-            if (choice != 'r') {
-                break;   
-            }
-
-            std::cout << "Email: ";
-            std::getline(std::cin, email);
-            email = trim(email);
-            std::cout << "Password: ";
-            std::getline(std::cin, password);
-            password = trim(password);
-
-            registerResultReceived = false;
-            protocol::RegisterMessage reg{email, password};
-            nlohmann::json regPayload = reg;
-            nlohmann::json regEnvelope = protocol::wrapEnvelope("register", regPayload);
-            c.send(ctx.hdl, regEnvelope.dump(), websocketpp::frame::opcode::text);
-
-            while (!registerResultReceived) {
-                c.poll();
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
-            }
-
-            if (registerSucceeded) {
-                std::cout << "Registration succeeded." << std::endl;
-            } else {
-                std::cout << "Registration failed: " << registerFailureReason << std::endl;
-            }
+        win32_ui::LoginWindow window;
+        if (!window.create()) {
+            std::cerr << "game_client: failed to create login window." << std::endl;
+            return 1;
         }
 
-        std::cout << "Email: ";
-        std::getline(std::cin, email);
-        email = trim(email);
-        std::cout << "Password: ";
-        std::getline(std::cin, password);
-        password = trim(password);
+        FlowState flowState = FlowState::Idle;
+        bool waitingForLoginResponse = false;
+        bool loggedIn = false;
 
-        std::cout << "Logging in..." << std::endl;
-        protocol::LoginMessage login{email, password};
-        nlohmann::json payload = login;
-        nlohmann::json envelope = protocol::wrapEnvelope("login", payload);
-        c.send(ctx.hdl, envelope.dump(), websocketpp::frame::opcode::text);
-
-        while (!loginResultReceived) {
+        while (true) {
+            if (!window.pumpMessages()) {
+                return 0;
+            }
             c.poll();
+
+            if (flowState == FlowState::Idle) {
+                win32_ui::LoginAction action = window.takeRequestedAction();
+                if (action == win32_ui::LoginAction::LoginRequested) {
+                    flowState = FlowState::LoginRequested;
+                } else if (action == win32_ui::LoginAction::RegisterRequested) {
+                    flowState = FlowState::RegisterRequested;
+                }
+            }
+
+            if (flowState == FlowState::LoginRequested) {
+                std::string email = trim(window.email());
+                std::string password = trim(window.password());
+
+                loginResultReceived = false;
+                protocol::LoginMessage login{email, password};
+                nlohmann::json payload = login;
+                nlohmann::json envelope = protocol::wrapEnvelope("login", payload);
+                c.send(ctx.hdl, envelope.dump(), websocketpp::frame::opcode::text);
+
+                window.setStatus("Logging in...");
+                window.setEnabled(false);
+                waitingForLoginResponse = true;
+                flowState = FlowState::WaitingForResponse;
+            } else if (flowState == FlowState::RegisterRequested) {
+                std::string email = trim(window.email());
+                std::string password = trim(window.password());
+
+                registerResultReceived = false;
+                protocol::RegisterMessage reg{email, password};
+                nlohmann::json payload = reg;
+                nlohmann::json envelope = protocol::wrapEnvelope("register", payload);
+                c.send(ctx.hdl, envelope.dump(), websocketpp::frame::opcode::text);
+
+                window.setStatus("Registering...");
+                window.setEnabled(false);
+                waitingForLoginResponse = false;
+                flowState = FlowState::WaitingForResponse;
+            } else if (flowState == FlowState::WaitingForResponse) {
+                if (waitingForLoginResponse && loginResultReceived) {
+                    if (loginSucceeded) {
+                        window.setStatus("Login succeeded!");
+                        loggedIn = true;
+                        break;
+                    } else {
+                        window.setStatus("Login failed: " + loginFailureReason);
+                        window.setEnabled(true);
+                        flowState = FlowState::Idle;
+                    }
+                } else if (!waitingForLoginResponse && registerResultReceived) {
+                    if (registerSucceeded) {
+                        window.setStatus("Registered successfully - now log in.");
+                    } else {
+                        window.setStatus("Registration failed: " + registerFailureReason);
+                    }
+                    window.setEnabled(true);
+                    flowState = FlowState::Idle;
+                }
+            }
+
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
-        if (!loginSucceeded) {
-            std::cout << "Login failed: " << loginFailureReason << std::endl;
-            if (ctx.connected) {
-                c.close(ctx.hdl, websocketpp::close::status::normal, "login failed");
-                c.poll();
-            }
-            return 1;
+        window.destroy();
+
+        if (!loggedIn) {
+            return 0;
         }
 
         std::cout << "Login succeeded. Rating: " << loginRating << std::endl;
