@@ -19,7 +19,11 @@ namespace ScriptRunner {
             if (verb == "click") {
                 int x, y;
                 ss >> x >> y;
-                Controller::click(st, x, y);
+                std::string colorToken;
+                ss >> colorToken;
+                Color playerColor = (colorToken == "black") ? Color::Black : Color::White;
+
+                Controller::click(st, x, y, playerColor);
             } else if (verb == "jump") {
                 int x, y;
                 ss >> x >> y;

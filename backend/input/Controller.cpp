@@ -8,7 +8,14 @@
 
 namespace Controller {
 
-    void click(GameState& st, int x, int y) {
+    void click(GameState& st, int x, int y, Color playerColor) {
+        if (st.selection.active) {
+            std::optional<Piece> owner = st.board.pieceAt(st.selection.cell);
+            if (!owner || owner->color != playerColor) {
+                return;
+            }
+        }
+
         auto cell = pixelToCell(x, y, st.board);
         if (!cell) {
             if (st.selection.active) st.selection = Selection{};
@@ -24,15 +31,15 @@ namespace Controller {
             std::optional<Piece> selected = st.board.pieceAt(st.selection.cell);
             bool sameSide = clicked && selected && clicked->color == selected->color;
             if (sameSide) {
-                st.selection = {true, {row, col}, st.elapsedMs};   // reselect
+                st.selection = {true, {row, col}, st.elapsedMs};  
             } else {
-                sendMove(st, row, col);                            // complete: move or capture
+                sendMove(st, row, col);                           
             }
             return;
         }
 
-        if (clicked) {
-            st.selection = {true, {row, col}, st.elapsedMs};       // open a fresh selection
+        if (clicked && clicked->color == playerColor) {
+            st.selection = {true, {row, col}, st.elapsedMs};      
         }
     }
 

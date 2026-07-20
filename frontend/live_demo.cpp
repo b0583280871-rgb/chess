@@ -15,7 +15,10 @@ namespace {
         if (event != cv::EVENT_LBUTTONDOWN) return;
 
         GameState* state = static_cast<GameState*>(userdata);
-        Controller::click(*state, x, y);
+        // live_demo is a local single-process demo with no real player
+        // identity/turn concept - Color::White is a fixed, agreed default
+        // (matches the convention elsewhere of the first player being white).
+        Controller::click(*state, x, y, Color::White);
     }
 }
 

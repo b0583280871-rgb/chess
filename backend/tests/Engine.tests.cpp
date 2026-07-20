@@ -505,7 +505,7 @@ TEST_CASE("a king destroyed via jump interception sets gameOver true") {
 TEST_CASE("handleClick opens a fresh selection when clicking an idle piece") {
     GameState st = makeState({"wK . . .", ". . . .", ". . . .", ". . . ."});
 
-    Controller::click(st, 5, 5); // inside cell (0,0)
+    Controller::click(st, 5, 5, Color::White); // inside cell (0,0)
 
     CHECK(st.selection.active);
     CHECK(st.selection.cell.row == 0);
@@ -516,7 +516,7 @@ TEST_CASE("handleClick reselects when clicking another piece of the same color")
     GameState st = makeState({"wK . wQ .", ". . . .", ". . . .", ". . . ."});
     st.selection = {true, {0, 0}, 0};
 
-    Controller::click(st, 205, 5); // cell (0,2), also white
+    Controller::click(st, 205, 5, Color::White); // cell (0,2), also white
 
     CHECK(st.selection.active);
     CHECK(st.selection.cell.col == 2);
@@ -526,7 +526,7 @@ TEST_CASE("handleClick completes a pending selection when clicking an empty cell
     GameState st = makeState({"wR . . .", ". . . .", ". . . .", ". . . ."});
     st.selection = {true, {0, 0}, 0};
 
-    Controller::click(st, 305, 5); // empty cell (0,3)
+    Controller::click(st, 305, 5, Color::White); // empty cell (0,3)
 
     CHECK(tokenAt(st.board, {0, 0}) == "wR");
     REQUIRE(st.arbiter.hasActiveMotion());
@@ -539,7 +539,7 @@ TEST_CASE("handleClick completes a pending selection as a capture on an enemy ce
     GameState st = makeState({"wR . . bP", ". . . .", ". . . .", ". . . ."});
     st.selection = {true, {0, 0}, 0};
 
-    Controller::click(st, 305, 5); // the black pawn at (0,3)
+    Controller::click(st, 305, 5, Color::White); // the black pawn at (0,3)
 
     CHECK(tokenAt(st.board, {0, 0}) == "wR");
     REQUIRE(st.arbiter.hasActiveMotion());
@@ -549,21 +549,57 @@ TEST_CASE("handleClick completes a pending selection as a capture on an enemy ce
     CHECK(tokenAt(st.board, {0, 3}) == "wR"); // captured the black pawn
 }
 
-TEST_CASE("handleClick with no pending selection opens a selection regardless of piece color") {
+TEST_CASE("handleClick with no pending selection ignores a click on an opposing piece") {
+    // Was "...opens a selection regardless of piece color" before color
+    // enforcement (S5.7) - that permissive behavior is exactly what this
+    // step removes, so the test now demonstrates the opposite.
     GameState st = makeState({"wR . . bP", ". . . .", ". . . .", ". . . ."});
 
-    Controller::click(st, 305, 5); // black's pawn, nobody is pending
+    Controller::click(st, 305, 5, Color::White); // black's pawn, but a white player is clicking
 
-    CHECK(tokenAt(st.board, {0, 3}) == "bP");
+    CHECK(tokenAt(st.board, {0, 3}) == "bP");      // piece untouched
     CHECK_FALSE(st.arbiter.hasActiveMotion());
+    CHECK_FALSE(st.selection.active);              // no selection opened - wrong color
+}
+
+TEST_CASE("handleClick does not let a white player select a black piece") {
+    GameState st = makeState({"bK . . .", ". . . .", ". . . .", ". . . ."});
+
+    Controller::click(st, 5, 5, Color::White); // black king at (0,0)
+
+    CHECK_FALSE(st.selection.active);
+}
+
+TEST_CASE("handleClick does not let a black player select a white piece") {
+    GameState st = makeState({"wK . . .", ". . . .", ". . . .", ". . . ."});
+
+    Controller::click(st, 5, 5, Color::Black); // white king at (0,0)
+
+    CHECK_FALSE(st.selection.active);
+}
+
+TEST_CASE("handleClick ignores a click from the wrong color while a selection is active") {
+    GameState st = makeState({"wR . . bN", ". . . .", ". . . .", ". . . ."});
+
+    Controller::click(st, 5, 5, Color::White); // white selects its rook at (0,0)
+    REQUIRE(st.selection.active);
+    REQUIRE(st.selection.cell.col == 0);
+
+    // Black tries to act on white's pending selection - must be a complete
+    // no-op: no reselect, no move, no cancellation of white's selection.
+    Controller::click(st, 305, 5, Color::Black); // black's own knight at (0,3)
+
     CHECK(st.selection.active);
-    CHECK(st.selection.cell.col == 3);
+    CHECK(st.selection.cell.col == 0);           // still white's rook
+    CHECK_FALSE(st.arbiter.hasActiveMotion());
+    CHECK(tokenAt(st.board, {0, 0}) == "wR");    // rook never moved
+    CHECK(tokenAt(st.board, {0, 3}) == "bN");    // knight never captured/moved
 }
 
 TEST_CASE("handleClick ignores clicks outside the board") {
     GameState st = makeState({"wK ."});
-    Controller::click(st, -5, -5);
-    Controller::click(st, 10000, 10000);
+    Controller::click(st, -5, -5, Color::White);
+    Controller::click(st, 10000, 10000, Color::White);
 
     CHECK_FALSE(st.selection.active);
 }
@@ -571,16 +607,17 @@ TEST_CASE("handleClick ignores clicks outside the board") {
 TEST_CASE("handleClick cancels an active selection on an outside-board click") {
     GameState st = makeState({"wR . . bN", ". . . .", ". . . .", ". . . ."});
 
-    Controller::click(st, 5, 5); // select the rook at (0,0)
+    Controller::click(st, 5, 5, Color::White); // white selects the rook at (0,0)
     REQUIRE(st.selection.active);
 
-    Controller::click(st, -5, -5); // outside the board -> must cancel the selection
+    Controller::click(st, -5, -5, Color::White); // white, outside the board -> cancels its own selection
 
     CHECK_FALSE(st.selection.active);
 
-    // The next in-bounds click must open a fresh selection on the enemy
-    // knight, not be misread as completing a move from the stale selection.
-    Controller::click(st, 305, 5); // click on the black knight at (0,3)
+    // The next click - by black now, with no selection pending - must open a
+    // fresh selection on its own knight, not be misread as completing a
+    // move from the stale (already-cleared) selection.
+    Controller::click(st, 305, 5, Color::Black); // black selects its own knight at (0,3)
 
     CHECK_FALSE(st.arbiter.hasActiveMotion());
     CHECK(tokenAt(st.board, {0, 0}) == "wR");   // rook never moved
@@ -588,9 +625,20 @@ TEST_CASE("handleClick cancels an active selection on an outside-board click") {
     CHECK(st.selection.cell.col == 3);          // freshly selected the knight, not a completed move
 }
 
+TEST_CASE("handleClick does not let an outside-board click from the wrong color cancel someone else's selection") {
+    GameState st = makeState({"wR . . bN", ". . . .", ". . . .", ". . . ."});
+
+    Controller::click(st, 5, 5, Color::White); // white selects its rook
+    REQUIRE(st.selection.active);
+
+    Controller::click(st, -5, -5, Color::Black); // black's out-of-bounds click
+
+    CHECK(st.selection.active);   // white's selection survives - it wasn't black's to cancel
+}
+
 TEST_CASE("handleClick on an empty cell with no pending selection is a no-op") {
     GameState st = makeState({". . .", ". . .", ". . ."});
-    Controller::click(st, 5, 5);
+    Controller::click(st, 5, 5, Color::White);
     CHECK_FALSE(st.selection.active);
 }
 
@@ -678,8 +726,8 @@ TEST_CASE("runCommands demonstrates a successful jump interception") {
 
     std::vector<std::string> commands = {
         "jump 5 5",      // wR at (0,0) jumps in place
-        "click 105 5",   // select bR at (0,1)
-        "click 5 5",     // send it toward wR's cell - a legal 1-cell rook move
+        "click 105 5 black", // select bR at (0,1)
+        "click 5 5 black",   // send it toward wR's cell - a legal 1-cell rook move
         "wait 1000",     // rook: 1.0 cells/sec, 1 cell -> 1000ms - same tick as the jump's window
         "print board"
     };

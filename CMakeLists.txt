@@ -224,21 +224,16 @@ link_opencv(live_demo)
 copy_assets(live_demo)
 
 
-add_executable(protocol_demo_server
-    network/protocol_demo_server.cpp
-    network/protocol/JsonCodec.cpp
-)
-add_executable(protocol_demo_client
-    network/protocol_demo_client.cpp
-    network/protocol/JsonCodec.cpp
-)
-target_include_directories(protocol_demo_server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(protocol_demo_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-
-# game_server / game_client - real GameEngine integration, single global game
+# game_server / game_client - real GameEngine integration + real login
+# (persistence/), single global game. protocol_demo_server/client are gone -
+# superseded now that game_server/game_client do the real thing (see
+# CLAUDE.md's demo/executable policy).
 add_executable(game_server
     network/game_server.cpp
     network/protocol/JsonCodec.cpp
+    persistence/Database.cpp
+    persistence/UserRepository.cpp
+    ${SQLITE3_SOURCE_DIR}/sqlite3.c
     backend/model/Board.cpp
     backend/model/Piece.cpp
     backend/model/Position.cpp
@@ -251,6 +246,7 @@ add_executable(game_server
     backend/engine/GameSnapshot.cpp
     backend/engine/GameEngine.cpp
 )
+target_include_directories(game_server PRIVATE ${SQLITE3_SOURCE_DIR} ${PICOSHA2_INCLUDE_DIR})
 
 add_executable(game_client
     network/game_client.cpp
@@ -263,7 +259,7 @@ target_include_directories(game_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/front
 link_opencv(game_client)
 copy_assets(game_client)
 
-foreach(net_target protocol_demo_server protocol_demo_client game_server game_client)
+foreach(net_target game_server game_client)
     target_include_directories(${net_target} PRIVATE
         ${WEBSOCKETPP_INCLUDE_DIR}
         ${ASIO_INCLUDE_DIR}
