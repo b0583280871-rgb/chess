@@ -1,13 +1,19 @@
-# i need to check the file
-
 cmake_minimum_required(VERSION 3.14)
-project(chess_game CXX)
+project(chess_game CXX C) 
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# =============================================================================
+# Networking dependencies - fetched from source (header-only, no manual
+# download/install), see network/ and PROTOCOL.md.
+# =============================================================================
 include(FetchContent)
 
+# Deliberately using FetchContent_Populate (source-only) rather than
+# FetchContent_MakeAvailable: none of these libraries' own CMakeLists.txt is
+# invoked, since we only want their headers, not their own CMake-built
+# targets. Silences CMake's "call MakeAvailable instead" dev warning.
 if(POLICY CMP0169)
     cmake_policy(SET CMP0169 OLD)
 endif()
@@ -21,6 +27,7 @@ FetchContent_GetProperties(websocketpp)
 if(NOT websocketpp_POPULATED)
     FetchContent_Populate(websocketpp)
 endif()
+set(WEBSOCKETPP_INCLUDE_DIR ${websocketpp_SOURCE_DIR})
 
 FetchContent_Declare(
     asio
@@ -31,8 +38,6 @@ FetchContent_GetProperties(asio)
 if(NOT asio_POPULATED)
     FetchContent_Populate(asio)
 endif()
-
-set(WEBSOCKETPP_INCLUDE_DIR ${websocketpp_SOURCE_DIR})
 set(ASIO_INCLUDE_DIR ${asio_SOURCE_DIR}/asio/include)
 
 FetchContent_Declare(
@@ -44,8 +49,72 @@ FetchContent_GetProperties(nlohmann_json)
 if(NOT nlohmann_json_POPULATED)
     FetchContent_Populate(nlohmann_json)
 endif()
-
 set(NLOHMANN_JSON_INCLUDE_DIR ${nlohmann_json_SOURCE_DIR}/single_include)
+
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+FetchContent_Declare(
+    sqlite3
+    URL https://www.sqlite.org/2024/sqlite-amalgamation-3450100.zip
+)
+FetchContent_GetProperties(sqlite3)
+if(NOT sqlite3_POPULATED)
+    FetchContent_Populate(sqlite3)
+endif()
+set(SQLITE3_SOURCE_DIR ${sqlite3_SOURCE_DIR})
+
+FetchContent_Declare(
+    picosha2
+    GIT_REPOSITORY https://github.com/okdshin/PicoSHA2.git
+    GIT_TAG        master
+)
+FetchContent_GetProperties(picosha2)
+if(NOT picosha2_POPULATED)
+    FetchContent_Populate(picosha2)
+endif()
+set(PICOSHA2_INCLUDE_DIR ${picosha2_SOURCE_DIR})
+
+option(USE_LOCAL_OPENCV "Use local OpenCV in OpenCV_451 folder" OFF)
+
+if(USE_LOCAL_OPENCV)
+    set(OPENCV_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/OpenCV_451-20260714T084200Z-1-001/OpenCV_451")
+    if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
+        message(STATUS "Using local OpenCV at ${OPENCV_ROOT}")
+        set(OPENCV_LIBRARY "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.lib,${OPENCV_ROOT}/bin/opencv_world451.lib>")
+    else()
+        message(WARNING "Local OpenCV not found under ${OPENCV_ROOT}; disable USE_LOCAL_OPENCV or place OpenCV there")
+    endif()
+else()
+    find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui)
+endif()
+
+function(link_opencv target_name)
+    if(USE_LOCAL_OPENCV)
+        if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
+            target_include_directories(${target_name} PRIVATE "${OPENCV_ROOT}/include")
+            target_link_libraries(${target_name} PRIVATE ${OPENCV_LIBRARY})
+            add_custom_command(TARGET ${target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
+                    $<TARGET_FILE_DIR:${target_name}>
+            )
+        endif()
+    else()
+        if(OpenCV_FOUND)
+            target_include_directories(${target_name} PRIVATE ${OpenCV_INCLUDE_DIRS})
+            target_link_libraries(${target_name} PRIVATE ${OpenCV_LIBS})
+        endif()
+    endif()
+endfunction()
+
+function(copy_assets target_name)
+    add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
+            "$<TARGET_FILE_DIR:${target_name}>/assets"
+    )
+endfunction()
 
 add_executable(chess_game
     backend/chess_main.cpp
@@ -82,7 +151,11 @@ if(BUILD_TESTS)
         backend/tests/SpriteAnimation.tests.cpp
         backend/tests/Protocol.tests.cpp
         backend/tests/ProtocolJson.tests.cpp
+        backend/tests/UserRepository.tests.cpp
         network/protocol/JsonCodec.cpp
+        persistence/Database.cpp
+        persistence/UserRepository.cpp
+        ${SQLITE3_SOURCE_DIR}/sqlite3.c
         backend/model/Board.cpp
         backend/model/Piece.cpp
         backend/model/Position.cpp
@@ -99,68 +172,35 @@ if(BUILD_TESTS)
         frontend/ui/img.cpp
         frontend/view/SpriteLoader.cpp
     )
-    target_include_directories(chess_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party ${CMAKE_CURRENT_SOURCE_DIR}/frontend ${CMAKE_CURRENT_SOURCE_DIR} ${NLOHMANN_JSON_INCLUDE_DIR})
+    target_include_directories(chess_tests PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/backend
+        ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party
+        ${CMAKE_CURRENT_SOURCE_DIR}/frontend
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${NLOHMANN_JSON_INCLUDE_DIR}
+        ${SQLITE3_SOURCE_DIR}
+        ${PICOSHA2_INCLUDE_DIR}
+    )
+    link_opencv(chess_tests)
+    copy_assets(chess_tests)
 
     add_test(NAME chess_tests COMMAND chess_tests)
-    add_custom_command(TARGET chess_tests POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
-            "$<TARGET_FILE_DIR:chess_tests>/assets"
-    )
 
     option(ENABLE_COVERAGE "Build chess_tests with coverage instrumentation" OFF)
-
     if(ENABLE_COVERAGE)
         target_compile_options(chess_tests PRIVATE --coverage -O0 -g)
         target_link_options(chess_tests PRIVATE --coverage)
     endif()
 endif()
 
-option(USE_LOCAL_OPENCV "Use local OpenCV in OpenCV_451 folder" OFF)
-
-if(USE_LOCAL_OPENCV)
-    set(OPENCV_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/OpenCV_451-20260714T084200Z-1-001/OpenCV_451")
-    if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
-        message(STATUS "Using local OpenCV at ${OPENCV_ROOT}")
-        set(OPENCV_LIBRARY "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.lib,${OPENCV_ROOT}/bin/opencv_world451.lib>")
-    else()
-        message(WARNING "Local OpenCV not found under ${OPENCV_ROOT}; disable USE_LOCAL_OPENCV or place OpenCV there")
-    endif()
-else()
-    find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui)
-endif()
-
-# --- sprite_demo: Step 1 of sprite-loading plan - single static sprite -----
 add_executable(sprite_demo
     frontend/sprite_demo.cpp
     frontend/ui/img.cpp
     frontend/view/SpriteLoader.cpp
 )
 target_include_directories(sprite_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
-
-add_custom_command(TARGET sprite_demo POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
-        "$<TARGET_FILE_DIR:sprite_demo>/assets"
-)
-
-if(USE_LOCAL_OPENCV)
-    if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
-        target_include_directories(sprite_demo PRIVATE "${OPENCV_ROOT}/include")
-        target_link_libraries(sprite_demo PRIVATE ${OPENCV_LIBRARY})
-
-        add_custom_command(TARGET sprite_demo POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
-                $<TARGET_FILE_DIR:sprite_demo>
-        )
-    endif()
-else()
-    if(OpenCV_FOUND)
-        target_include_directories(sprite_demo PRIVATE ${OpenCV_INCLUDE_DIRS})
-        target_link_libraries(sprite_demo PRIVATE ${OpenCV_LIBS})
-    endif()
-endif()
+link_opencv(sprite_demo)
+copy_assets(sprite_demo)
 
 add_executable(live_demo
     frontend/live_demo.cpp
@@ -180,50 +220,9 @@ add_executable(live_demo
     backend/engine/GameEngine.cpp
 )
 target_include_directories(live_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
+link_opencv(live_demo)
+copy_assets(live_demo)
 
-add_custom_command(TARGET live_demo POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
-        "$<TARGET_FILE_DIR:live_demo>/assets"
-)
-
-if(USE_LOCAL_OPENCV)
-    if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
-        target_include_directories(live_demo PRIVATE "${OPENCV_ROOT}/include")
-        target_link_libraries(live_demo PRIVATE ${OPENCV_LIBRARY})
-
-        add_custom_command(TARGET live_demo POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
-                $<TARGET_FILE_DIR:live_demo>
-        )
-    endif()
-else()
-    if(OpenCV_FOUND)
-        target_include_directories(live_demo PRIVATE ${OpenCV_INCLUDE_DIRS})
-        target_link_libraries(live_demo PRIVATE ${OpenCV_LIBS})
-    endif()
-endif()
-
-if(BUILD_TESTS)
-    if(USE_LOCAL_OPENCV)
-        if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
-            target_include_directories(chess_tests PRIVATE "${OPENCV_ROOT}/include")
-            target_link_libraries(chess_tests PRIVATE ${OPENCV_LIBRARY})
-
-            add_custom_command(TARGET chess_tests POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
-                    $<TARGET_FILE_DIR:chess_tests>
-            )
-        endif()
-    else()
-        if(OpenCV_FOUND)
-            target_include_directories(chess_tests PRIVATE ${OpenCV_INCLUDE_DIRS})
-            target_link_libraries(chess_tests PRIVATE ${OpenCV_LIBS})
-        endif()
-    endif()
-endif()
 
 add_executable(protocol_demo_server
     network/protocol_demo_server.cpp
@@ -233,9 +232,10 @@ add_executable(protocol_demo_client
     network/protocol_demo_client.cpp
     network/protocol/JsonCodec.cpp
 )
-target_include_directories(protocol_demo_server PRIVATE ${NLOHMANN_JSON_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(protocol_demo_client PRIVATE ${NLOHMANN_JSON_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(protocol_demo_server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(protocol_demo_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+# game_server / game_client - real GameEngine integration, single global game
 add_executable(game_server
     network/game_server.cpp
     network/protocol/JsonCodec.cpp
@@ -251,7 +251,6 @@ add_executable(game_server
     backend/engine/GameSnapshot.cpp
     backend/engine/GameEngine.cpp
 )
-target_include_directories(game_server PRIVATE ${WEBSOCKETPP_INCLUDE_DIR} ${ASIO_INCLUDE_DIR} ${NLOHMANN_JSON_INCLUDE_DIR})
 
 add_executable(game_client
     network/game_client.cpp
@@ -260,42 +259,32 @@ add_executable(game_client
     frontend/view/SpriteLoader.cpp
     frontend/view/Renderer.cpp
 )
-target_include_directories(game_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend ${WEBSOCKETPP_INCLUDE_DIR} ${ASIO_INCLUDE_DIR} ${NLOHMANN_JSON_INCLUDE_DIR})
+target_include_directories(game_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
+link_opencv(game_client)
+copy_assets(game_client)
 
-if(USE_LOCAL_OPENCV)
-    if(EXISTS "${OPENCV_ROOT}/include" AND (EXISTS "${OPENCV_ROOT}/bin/opencv_world451.lib" OR EXISTS "${OPENCV_ROOT}/bin/opencv_world451d.lib"))
-        target_include_directories(game_client PRIVATE "${OPENCV_ROOT}/include")
-        target_link_libraries(game_client PRIVATE ${OPENCV_LIBRARY})
-
-        add_custom_command(TARGET game_client POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "$<IF:$<CONFIG:Debug>,${OPENCV_ROOT}/bin/opencv_world451d.dll,${OPENCV_ROOT}/bin/opencv_world451.dll>"
-                $<TARGET_FILE_DIR:game_client>
-        )
-    endif()
-else()
-    if(OpenCV_FOUND)
-        target_include_directories(game_client PRIVATE ${OpenCV_INCLUDE_DIRS})
-        target_link_libraries(game_client PRIVATE ${OpenCV_LIBS})
-    endif()
-endif()
-
-add_custom_command(TARGET game_client POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
-        "$<TARGET_FILE_DIR:game_client>/assets"
-)
-
-foreach(ws_target protocol_demo_server protocol_demo_client game_server game_client)
-    target_include_directories(${ws_target} PRIVATE ${WEBSOCKETPP_INCLUDE_DIR} ${ASIO_INCLUDE_DIR})
-    target_compile_definitions(${ws_target} PRIVATE
+foreach(net_target protocol_demo_server protocol_demo_client game_server game_client)
+    target_include_directories(${net_target} PRIVATE
+        ${WEBSOCKETPP_INCLUDE_DIR}
+        ${ASIO_INCLUDE_DIR}
+        ${NLOHMANN_JSON_INCLUDE_DIR}
+    )
+    target_compile_definitions(${net_target} PRIVATE
         ASIO_STANDALONE
         _WEBSOCKETPP_CPP11_STL_
         _WEBSOCKETPP_CPP11_THREAD_
     )
 
     if(WIN32)
-        target_compile_definitions(${ws_target} PRIVATE _WIN32_WINNT=0x0601)
-        target_link_libraries(${ws_target} PRIVATE ws2_32 wsock32 mswsock)
+        target_compile_definitions(${net_target} PRIVATE _WIN32_WINNT=0x0601)
+        target_link_libraries(${net_target} PRIVATE ws2_32 wsock32 mswsock)
     endif()
 endforeach()
+
+add_executable(persistence_demo
+    persistence/persistence_demo.cpp
+    persistence/Database.cpp
+    persistence/UserRepository.cpp
+    ${SQLITE3_SOURCE_DIR}/sqlite3.c
+)
+target_include_directories(persistence_demo PRIVATE ${SQLITE3_SOURCE_DIR} ${PICOSHA2_INCLUDE_DIR})
