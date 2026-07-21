@@ -4,16 +4,8 @@ project(chess_game CXX C)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# =============================================================================
-# Networking dependencies - fetched from source (header-only, no manual
-# download/install), see network/ and PROTOCOL.md.
-# =============================================================================
 include(FetchContent)
 
-# Deliberately using FetchContent_Populate (source-only) rather than
-# FetchContent_MakeAvailable: none of these libraries' own CMakeLists.txt is
-# invoked, since we only want their headers, not their own CMake-built
-# targets. Silences CMake's "call MakeAvailable instead" dev warning.
 if(POLICY CMP0169)
     cmake_policy(SET CMP0169 OLD)
 endif()
@@ -193,20 +185,14 @@ if(BUILD_TESTS)
     endif()
 endif()
 
-add_executable(sprite_demo
-    frontend/sprite_demo.cpp
-    frontend/ui/img.cpp
-    frontend/view/SpriteLoader.cpp
-)
-target_include_directories(sprite_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
-link_opencv(sprite_demo)
-copy_assets(sprite_demo)
 
 add_executable(live_demo
     frontend/live_demo.cpp
     frontend/ui/img.cpp
     frontend/view/SpriteLoader.cpp
     frontend/view/Renderer.cpp
+    frontend/audio/AudioPlayer.cpp
+    frontend/audio/GameEventDetector.cpp
     backend/model/Board.cpp
     backend/model/Piece.cpp
     backend/model/Position.cpp
@@ -222,6 +208,7 @@ add_executable(live_demo
 target_include_directories(live_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
 link_opencv(live_demo)
 copy_assets(live_demo)
+target_link_libraries(live_demo PRIVATE winmm)
 
 
 # game_server / game_client - real GameEngine integration + real login
@@ -255,10 +242,13 @@ add_executable(game_client
     frontend/ui/img.cpp
     frontend/view/SpriteLoader.cpp
     frontend/view/Renderer.cpp
+    frontend/audio/AudioPlayer.cpp
+    frontend/audio/GameEventDetector.cpp
 )
 target_include_directories(game_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
 link_opencv(game_client)
 copy_assets(game_client)
+target_link_libraries(game_client PRIVATE winmm)
 
 foreach(net_target game_server game_client)
     target_include_directories(${net_target} PRIVATE
