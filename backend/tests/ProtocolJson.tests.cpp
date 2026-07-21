@@ -98,6 +98,13 @@ TEST_CASE("LeaveMessage round-trips through JSON with an empty payload") {
 
 TEST_CASE("LoginResultMessage round-trips through JSON (success, with rating, no reason)") {
     LoginResultMessage original{true, std::nullopt, 1200};
+
+    json payload = original;
+    CHECK(payload.contains("reason"));
+    CHECK(payload.at("reason").is_null());
+    CHECK(payload.contains("rating"));
+    CHECK_FALSE(payload.at("rating").is_null());
+
     LoginResultMessage decoded = roundTrip(original, "login_result");
 
     CHECK(decoded.success == original.success);
@@ -108,6 +115,13 @@ TEST_CASE("LoginResultMessage round-trips through JSON (success, with rating, no
 
 TEST_CASE("LoginResultMessage round-trips through JSON (failure, with reason, no rating)") {
     LoginResultMessage original{false, std::string("invalid_credentials"), std::nullopt};
+
+    json payload = original;
+    CHECK(payload.contains("reason"));
+    CHECK_FALSE(payload.at("reason").is_null());
+    CHECK(payload.contains("rating"));
+    CHECK(payload.at("rating").is_null());
+
     LoginResultMessage decoded = roundTrip(original, "login_result");
 
     CHECK_FALSE(decoded.success);
@@ -142,6 +156,13 @@ TEST_CASE("RoomJoinedMessage round-trips through JSON") {
 
 TEST_CASE("MatchmakingResultMessage round-trips through JSON (success, with room_id)") {
     MatchmakingResultMessage original{true, std::string("room_42"), std::nullopt};
+
+    json payload = original;
+    CHECK(payload.contains("room_id"));
+    CHECK_FALSE(payload.at("room_id").is_null());
+    CHECK(payload.contains("reason"));
+    CHECK(payload.at("reason").is_null());
+
     MatchmakingResultMessage decoded = roundTrip(original, "matchmaking_result");
 
     CHECK(decoded.success);
@@ -152,6 +173,13 @@ TEST_CASE("MatchmakingResultMessage round-trips through JSON (success, with room
 
 TEST_CASE("MatchmakingResultMessage round-trips through JSON (failure, with reason)") {
     MatchmakingResultMessage original{false, std::nullopt, std::string("no_opponent_found")};
+
+    json payload = original;
+    CHECK(payload.contains("room_id"));
+    CHECK(payload.at("room_id").is_null());
+    CHECK(payload.contains("reason"));
+    CHECK_FALSE(payload.at("reason").is_null());
+
     MatchmakingResultMessage decoded = roundTrip(original, "matchmaking_result");
 
     CHECK_FALSE(decoded.success);
@@ -190,6 +218,10 @@ TEST_CASE("SnapshotMessage round-trips through JSON with selectedCell explicitly
     original.cols = 3;
     original.gameOver = true;
 
+    json payload = original;
+    CHECK(payload.contains("selectedCell"));
+    CHECK(payload.at("selectedCell").is_null());
+
     SnapshotMessage decoded = roundTrip(original, "snapshot");
 
     CHECK(decoded.rows == 3);
@@ -217,6 +249,11 @@ TEST_CASE("GameOverResultMessage round-trips through JSON with a winner") {
 
 TEST_CASE("GameOverResultMessage round-trips through JSON with a null winner (draw)") {
     GameOverResultMessage original{std::nullopt, "draw"};
+
+    json payload = original;
+    CHECK(payload.contains("winner"));
+    CHECK(payload.at("winner").is_null());
+
     GameOverResultMessage decoded = roundTrip(original, "game_over_result");
 
     CHECK_FALSE(decoded.winner.has_value());

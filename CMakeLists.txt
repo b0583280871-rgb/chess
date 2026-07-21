@@ -103,7 +103,7 @@ endfunction()
 function(copy_assets target_name)
     add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_CURRENT_SOURCE_DIR}/frontend/assets"
+            "${CMAKE_CURRENT_SOURCE_DIR}/assets"
             "$<TARGET_FILE_DIR:${target_name}>/assets"
     )
 endfunction()
@@ -185,35 +185,6 @@ if(BUILD_TESTS)
 endif()
 
 
-add_executable(live_demo
-    frontend/live_demo.cpp
-    frontend/ui/img.cpp
-    frontend/view/SpriteLoader.cpp
-    frontend/view/Renderer.cpp
-    frontend/audio/AudioPlayer.cpp
-    frontend/audio/GameEventDetector.cpp
-    backend/model/Board.cpp
-    backend/model/Piece.cpp
-    backend/model/Position.cpp
-    backend/rules/PieceRules.cpp
-    backend/rules/RuleEngine.cpp
-    backend/realtime/RealTimeArbiter.cpp
-    backend/input/BoardMapper.cpp
-    backend/input/Controller.cpp
-    backend/io/BoardParser.cpp
-    backend/engine/GameSnapshot.cpp
-    backend/engine/GameEngine.cpp
-)
-target_include_directories(live_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
-link_opencv(live_demo)
-copy_assets(live_demo)
-target_link_libraries(live_demo PRIVATE winmm)
-
-
-# game_server / game_client - real GameEngine integration + real login
-# (persistence/), single global game. protocol_demo_server/client are gone -
-# superseded now that game_server/game_client do the real thing (see
-# CLAUDE.md's demo/executable policy).
 add_executable(game_server
     network/game_server.cpp
     network/protocol/JsonCodec.cpp
@@ -266,11 +237,3 @@ foreach(net_target game_server game_client)
         target_link_libraries(${net_target} PRIVATE ws2_32 wsock32 mswsock)
     endif()
 endforeach()
-
-add_executable(persistence_demo
-    persistence/persistence_demo.cpp
-    persistence/Database.cpp
-    persistence/UserRepository.cpp
-    ${SQLITE3_SOURCE_DIR}/sqlite3.c
-)
-target_include_directories(persistence_demo PRIVATE ${SQLITE3_SOURCE_DIR} ${PICOSHA2_INCLUDE_DIR})

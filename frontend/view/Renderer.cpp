@@ -3,19 +3,21 @@
 #include "SpriteLoader.hpp"
 #include "../../backend/rules/config.hpp"
 
-namespace {
-    const cv::Scalar SELECTION_HIGHLIGHT_COLOR(0, 0, 255, 255);      // bright red, BGRA
-    const cv::Scalar GAME_OVER_TEXT_COLOR(0, 255, 255, 255);         // bright yellow, BGRA
-    const cv::Scalar GAME_OVER_BACKGROUND_COLOR(20, 20, 20, 255);    // near-black, BGRA
-}
+constexpr std::string_view BACKGROUND_IMG_BOUARD_PATH = "assets/background.jpg";
+const cv::Scalar SELECTION_HIGHLIGHT_COLOR(0, 0, 255, 255);
+const cv::Scalar GAME_OVER_TEXT_COLOR(0, 255, 255, 255);
+const cv::Scalar GAME_OVER_BACKGROUND_COLOR(20, 20, 20, 255);
 
-void drawPiece(Img& canvas, const PieceSnapshot& piece) {
-    Img& sprite = SpriteLoader::getCachedPieceFrame(piece.pieceCode, piece.animState, piece.frameIndex);
+void drawPiece(Img &canvas, const PieceSnapshot &piece)
+{
+    Img &sprite = SpriteLoader::getCachedPieceFrame(piece.pieceCode, piece.animState, piece.frameIndex);
     sprite.draw_on(canvas, piece.pixelX, piece.pixelY);
 }
 
-void drawSelection(Img& canvas, const std::optional<Position>& selectedCell) {
-    if (!selectedCell) return;
+void drawSelection(Img &canvas, const std::optional<Position> &selectedCell)
+{
+    if (!selectedCell)
+        return;
 
     int x = selectedCell->col * config::CELL_SIZE;
     int y = selectedCell->row * config::CELL_SIZE;
@@ -33,7 +35,8 @@ void drawSelection(Img& canvas, const std::optional<Position>& selectedCell) {
     right.draw_on(canvas, x + config::CELL_SIZE - thickness, y);
 }
 
-void drawGameOver(Img& canvas, int canvasWidth, int canvasHeight) {
+void drawGameOver(Img &canvas, int canvasWidth, int canvasHeight)
+{
     const std::string text = "GAME OVER";
     const double fontScale = 1.8;
     const int thickness = 3;
@@ -42,13 +45,11 @@ void drawGameOver(Img& canvas, int canvasWidth, int canvasHeight) {
     cv::Size textSize = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, fontScale, thickness, &baseline);
 
     int textX = (canvasWidth - textSize.width) / 2;
-    int textY = (canvasHeight + textSize.height) / 2;   // put_text's y is the text baseline
+    int textY = (canvasHeight + textSize.height) / 2;
 
-    // Solid background box behind the text, sized to the text plus some
-    // padding, so the message stays readable over the board/pieces beneath.
     const int paddingX = 24;
     const int paddingY = 16;
-    int boxWidth  = textSize.width + 2 * paddingX;
+    int boxWidth = textSize.width + 2 * paddingX;
     int boxHeight = textSize.height + baseline + 2 * paddingY;
     int boxX = (canvasWidth - boxWidth) / 2;
     int boxY = textY - textSize.height - paddingY;
@@ -60,20 +61,23 @@ void drawGameOver(Img& canvas, int canvasWidth, int canvasHeight) {
     canvas.put_text(text, textX, textY, fontScale, GAME_OVER_TEXT_COLOR, thickness);
 }
 
-Img renderFrame(const GameSnapshot& snapshot) {
-    int width  = snapshot.cols * config::CELL_SIZE;
+Img renderFrame(const GameSnapshot &snapshot)
+{
+    int width = snapshot.cols * config::CELL_SIZE;
     int height = snapshot.rows * config::CELL_SIZE;
 
     Img canvas;
-    canvas.read("assets/board.png", {width, height}, false);
+    canvas.read(BACKGROUND_IMG_BOUARD_PATH.data(), {width, height}, false);
 
-    for (const PieceSnapshot& piece : snapshot.pieces) {
+    for (const PieceSnapshot &piece : snapshot.pieces)
+    {
         drawPiece(canvas, piece);
     }
 
     drawSelection(canvas, snapshot.selectedCell);
 
-    if (snapshot.gameOver) {
+    if (snapshot.gameOver)
+    {
         drawGameOver(canvas, width, height);
     }
 

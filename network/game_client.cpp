@@ -25,12 +25,14 @@ namespace {
     const std::string URI = "ws://localhost:9004";
     const std::string WINDOW_NAME = "Kung Fu Chess (networked)";
 
+
     std::string trim(const std::string& v) {
         size_t a = 0, b = v.size();
         while (a < b && std::isspace((unsigned char)v[a])) ++a;
         while (b > a && std::isspace((unsigned char)v[b - 1])) --b;
         return v.substr(a, b - a);
     }
+
 
     struct ClientContext {
         client* c = nullptr;
