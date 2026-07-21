@@ -3,17 +3,13 @@
 #include <string>
 
 #include "../ui/img.hpp"
-#include "../../backend/model/Piece.hpp"
 
 namespace SpriteLoader {
 
     inline const std::string PIECES_ROOT = "assets/pieces_classic/";
 
-    std::string pieceCodeFromPiece(Color color, Kind kind);
-
     Img& getCachedPieceSprite(const std::string& pieceCode, const std::string& state);
 
-    // Loads/caches a specific 1-based animation frame for (pieceCode, state).
     Img& getCachedPieceFrame(const std::string& pieceCode, const std::string& state, int frameIndex);
 
 }

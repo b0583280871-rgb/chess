@@ -137,7 +137,6 @@ if(BUILD_TESTS)
         backend/tests/Movement.tests.cpp
         backend/tests/Engine.tests.cpp
         backend/tests/Piece.tests.cpp
-        backend/tests/SpriteLoader.tests.cpp
         backend/tests/EngineSnapshot.tests.cpp
         backend/tests/RealTimeArbiter.tests.cpp
         backend/tests/SpriteAnimation.tests.cpp

@@ -6,20 +6,6 @@
 
 namespace SpriteLoader {
 
-    std::string pieceCodeFromPiece(Color color, Kind kind) {
-        char kindChar = 'K';
-        switch (kind) {
-            case Kind::King:   kindChar = 'K'; break;
-            case Kind::Queen:  kindChar = 'Q'; break;
-            case Kind::Rook:   kindChar = 'R'; break;
-            case Kind::Bishop: kindChar = 'B'; break;
-            case Kind::Knight: kindChar = 'N'; break;
-            case Kind::Pawn:   kindChar = 'P'; break;
-        }
-        char colorChar = (color == Color::White) ? 'W' : 'B';
-        return std::string{kindChar, colorChar};
-    }
-
     Img& getCachedPieceSprite(const std::string& pieceCode, const std::string& state) {
         static std::unordered_map<std::string, Img> cache;
 
