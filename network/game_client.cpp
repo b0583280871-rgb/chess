@@ -15,6 +15,8 @@
 #include "SnapshotAdapter.hpp"
 #include "protocol/JsonCodec.hpp"
 #include "view/Renderer.hpp"
+#include "audio/AudioPlayer.hpp"
+#include "audio/GameEventDetector.hpp"
 
 typedef websocketpp::client<websocketpp::config::asio_client> client;
 typedef websocketpp::connection_hdl connection_hdl;
@@ -247,12 +249,24 @@ int main() {
         cv::namedWindow(WINDOW_NAME);
         cv::setMouseCallback(WINDOW_NAME, onMouse, static_cast<void*>(&ctx));
 
+        audio::AudioPlayer audioPlayer;
+        audio::GameEventDetector eventDetector;
+
         bool gameOverKeySeen = false;
 
         while (true) {
             c.poll();
 
             if (hasNewSnapshot && latestSnapshot) {
+                audio::GameEventDetector::Events events = eventDetector.detect(*latestSnapshot);
+                if (events.gameOverJustNow) {
+                    audioPlayer.playGameOver();
+                } else if (events.captureHappened) {
+                    audioPlayer.playCapture();
+                } else if (events.moveStarted) {
+                    audioPlayer.playMove();
+                }
+
                 Img canvas = renderFrame(*latestSnapshot);
                 cv::imshow(WINDOW_NAME, canvas.get_mat());
                 hasNewSnapshot = false;

@@ -3,6 +3,8 @@
 #include "view/Renderer.hpp"
 #include "../backend/io/BoardParser.hpp"
 #include "../backend/io/BoardFormat.hpp"
+#include "audio/AudioPlayer.hpp"
+#include "audio/GameEventDetector.hpp"
 
 #include <opencv2/opencv.hpp>
 #include <chrono>
@@ -46,6 +48,9 @@ int main() {
         cv::namedWindow(WINDOW_NAME);
         cv::setMouseCallback(WINDOW_NAME, onMouse, static_cast<void*>(&state));
 
+        audio::AudioPlayer audioPlayer;
+        audio::GameEventDetector eventDetector;
+
         auto previousTime = std::chrono::steady_clock::now();
 
         while (true) {
@@ -56,6 +61,16 @@ int main() {
             handleWait(state, deltaMs);
 
             GameSnapshot snapshot = GameEngine::snapshot(state);
+
+            audio::GameEventDetector::Events events = eventDetector.detect(snapshot);
+            if (events.gameOverJustNow) {
+                audioPlayer.playGameOver();
+            } else if (events.captureHappened) {
+                audioPlayer.playCapture();
+            } else if (events.moveStarted) {
+                audioPlayer.playMove();
+            }
+
             Img canvas = renderFrame(snapshot);
 
             cv::imshow(WINDOW_NAME, canvas.get_mat());
