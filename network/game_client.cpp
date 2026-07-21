@@ -21,30 +21,36 @@
 typedef websocketpp::client<websocketpp::config::asio_client> client;
 typedef websocketpp::connection_hdl connection_hdl;
 
-namespace {
+namespace
+{
     const std::string URI = "ws://localhost:9004";
     const std::string WINDOW_NAME = "Kung Fu Chess (networked)";
 
-
-    std::string trim(const std::string& v) {
+    std::string trim(const std::string &v)
+    {
         size_t a = 0, b = v.size();
-        while (a < b && std::isspace((unsigned char)v[a])) ++a;
-        while (b > a && std::isspace((unsigned char)v[b - 1])) --b;
+        while (a < b && std::isspace((unsigned char)v[a]))
+            ++a;
+        while (b > a && std::isspace((unsigned char)v[b - 1]))
+            --b;
         return v.substr(a, b - a);
     }
 
-
-    struct ClientContext {
-        client* c = nullptr;
+    struct ClientContext
+    {
+        client *c = nullptr;
         connection_hdl hdl;
         bool connected = false;
     };
 
-    void onMouse(int event, int x, int y, int /*flags*/, void* userdata) {
-        if (event != cv::EVENT_LBUTTONDOWN) return;
+    void onMouse(int event, int x, int y, int /*flags*/, void *userdata)
+    {
+        if (event != cv::EVENT_LBUTTONDOWN)
+            return;
 
-        ClientContext* ctx = static_cast<ClientContext*>(userdata);
-        if (!ctx->connected) return;
+        ClientContext *ctx = static_cast<ClientContext *>(userdata);
+        if (!ctx->connected)
+            return;
 
         protocol::ClickMessage click{x, y};
         nlohmann::json payload = click;
@@ -53,7 +59,8 @@ namespace {
         ctx->c->send(ctx->hdl, envelope.dump(), websocketpp::frame::opcode::text);
     }
 
-    enum class FlowState {
+    enum class FlowState
+    {
         Idle,
         LoginRequested,
         RegisterRequested,
@@ -61,7 +68,8 @@ namespace {
     };
 }
 
-int main() {
+int main()
+{
     client c;
     ClientContext ctx;
     ctx.c = &c;
@@ -82,19 +90,21 @@ int main() {
     std::string myRole;
     std::string myRoomId;
 
-    try {
+    try
+    {
         c.set_access_channels(websocketpp::log::alevel::none);
         c.clear_access_channels(websocketpp::log::alevel::all);
 
         c.init_asio();
 
-        c.set_open_handler([&](connection_hdl hdl) {
+        c.set_open_handler([&](connection_hdl hdl)
+                           {
             ctx.hdl = hdl;
             ctx.connected = true;
-            std::cout << "Connected to game_server." << std::endl;
-        });
+            std::cout << "Connected to game_server." << std::endl; });
 
-        c.set_message_handler([&](connection_hdl, client::message_ptr msg) {
+        c.set_message_handler([&](connection_hdl, client::message_ptr msg)
+                              {
             const std::string rawText = msg->get_payload();
 
             std::string type;
@@ -135,29 +145,30 @@ int main() {
                 std::cout << "Server error: " << err.message << std::endl;
             } else {
                 std::cout << "unhandled type: " << type << std::endl;
-            }
-        });
+            } });
 
-        c.set_fail_handler([](connection_hdl) {
-            std::cerr << "game_client: connection failed - is game_server running?" << std::endl;
-        });
+        c.set_fail_handler([](connection_hdl)
+                           { std::cerr << "game_client: connection failed - is game_server running?" << std::endl; });
 
         websocketpp::lib::error_code ec;
         client::connection_ptr con = c.get_connection(URI, ec);
-        if (ec) {
+        if (ec)
+        {
             std::cerr << "game_client: could not create connection: " << ec.message() << std::endl;
             return 1;
         }
 
         c.connect(con);
 
-        while (!ctx.connected) {
+        while (!ctx.connected)
+        {
             c.poll();
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
         win32_ui::LoginWindow window;
-        if (!window.create()) {
+        if (!window.create())
+        {
             std::cerr << "game_client: failed to create login window." << std::endl;
             return 1;
         }
@@ -166,22 +177,29 @@ int main() {
         bool waitingForLoginResponse = false;
         bool loggedIn = false;
 
-        while (true) {
-            if (!window.pumpMessages()) {
+        while (true)
+        {
+            if (!window.pumpMessages())
+            {
                 return 0;
             }
             c.poll();
 
-            if (flowState == FlowState::Idle) {
+            if (flowState == FlowState::Idle)
+            {
                 win32_ui::LoginAction action = window.takeRequestedAction();
-                if (action == win32_ui::LoginAction::LoginRequested) {
+                if (action == win32_ui::LoginAction::LoginRequested)
+                {
                     flowState = FlowState::LoginRequested;
-                } else if (action == win32_ui::LoginAction::RegisterRequested) {
+                }
+                else if (action == win32_ui::LoginAction::RegisterRequested)
+                {
                     flowState = FlowState::RegisterRequested;
                 }
             }
 
-            if (flowState == FlowState::LoginRequested) {
+            if (flowState == FlowState::LoginRequested)
+            {
                 std::string email = trim(window.email());
                 std::string password = trim(window.password());
 
@@ -195,7 +213,9 @@ int main() {
                 window.setEnabled(false);
                 waitingForLoginResponse = true;
                 flowState = FlowState::WaitingForResponse;
-            } else if (flowState == FlowState::RegisterRequested) {
+            }
+            else if (flowState == FlowState::RegisterRequested)
+            {
                 std::string email = trim(window.email());
                 std::string password = trim(window.password());
 
@@ -209,21 +229,32 @@ int main() {
                 window.setEnabled(false);
                 waitingForLoginResponse = false;
                 flowState = FlowState::WaitingForResponse;
-            } else if (flowState == FlowState::WaitingForResponse) {
-                if (waitingForLoginResponse && loginResultReceived) {
-                    if (loginSucceeded) {
+            }
+            else if (flowState == FlowState::WaitingForResponse)
+            {
+                if (waitingForLoginResponse && loginResultReceived)
+                {
+                    if (loginSucceeded)
+                    {
                         window.setStatus("Login succeeded!");
                         loggedIn = true;
                         break;
-                    } else {
+                    }
+                    else
+                    {
                         window.setStatus("Login failed: " + loginFailureReason);
                         window.setEnabled(true);
                         flowState = FlowState::Idle;
                     }
-                } else if (!waitingForLoginResponse && registerResultReceived) {
-                    if (registerSucceeded) {
+                }
+                else if (!waitingForLoginResponse && registerResultReceived)
+                {
+                    if (registerSucceeded)
+                    {
                         window.setStatus("Registered successfully - now log in.");
-                    } else {
+                    }
+                    else
+                    {
                         window.setStatus("Registration failed: " + registerFailureReason);
                     }
                     window.setEnabled(true);
@@ -236,36 +267,45 @@ int main() {
 
         window.destroy();
 
-        if (!loggedIn) {
+        if (!loggedIn)
+        {
             return 0;
         }
 
         std::cout << "Login succeeded. Rating: " << loginRating << std::endl;
 
-        while (!roomJoinedReceived) {
+        while (!roomJoinedReceived)
+        {
             c.poll();
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
         std::cout << "Assigned role: " << myRole << " (room " << myRoomId << ")" << std::endl;
 
         cv::namedWindow(WINDOW_NAME);
-        cv::setMouseCallback(WINDOW_NAME, onMouse, static_cast<void*>(&ctx));
+        cv::setMouseCallback(WINDOW_NAME, onMouse, static_cast<void *>(&ctx));
 
         audio::AudioPlayer audioPlayer;
         audio::GameEventDetector eventDetector;
 
         bool gameOverKeySeen = false;
 
-        while (true) {
+        while (true)
+        {
             c.poll();
 
-            if (hasNewSnapshot && latestSnapshot) {
+            if (hasNewSnapshot && latestSnapshot)
+            {
                 audio::GameEventDetector::Events events = eventDetector.detect(*latestSnapshot);
-                if (events.gameOverJustNow) {
+                if (events.gameOverJustNow)
+                {
                     audioPlayer.playGameOver();
-                } else if (events.captureHappened) {
+                }
+                else if (events.captureHappened)
+                {
                     audioPlayer.playCapture();
-                } else if (events.moveStarted) {
+                }
+                else if (events.moveStarted)
+                {
                     audioPlayer.playMove();
                 }
 
@@ -276,27 +316,36 @@ int main() {
 
             int key = cv::waitKey(1);
 
-            if (key == 27 || key == 'q' || key == 'Q') {
+            if (key == 27 || key == 'q' || key == 'Q')
+            {
                 break;
             }
 
-            if (latestSnapshot && latestSnapshot->gameOver) {
-                if (gameOverKeySeen) break;
-                if (key != -1) gameOverKeySeen = true;
+            if (latestSnapshot && latestSnapshot->gameOver)
+            {
+                if (gameOverKeySeen)
+                    break;
+                if (key != -1)
+                    gameOverKeySeen = true;
             }
         }
 
-        if (ctx.connected) {
+        if (ctx.connected)
+        {
             c.close(ctx.hdl, websocketpp::close::status::normal, "client exiting");
             c.poll();
         }
 
         cv::destroyAllWindows();
         return 0;
-    } catch (websocketpp::exception const& e) {
+    }
+    catch (websocketpp::exception const &e)
+    {
         std::cerr << "game_client error: " << e.what() << std::endl;
         return 1;
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception &e)
+    {
         std::cerr << "game_client error: " << e.what() << std::endl;
         return 1;
     }

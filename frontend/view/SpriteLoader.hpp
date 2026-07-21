@@ -4,12 +4,13 @@
 
 #include "../ui/img.hpp"
 
-namespace SpriteLoader {
+namespace SpriteLoader
+{
 
     inline const std::string PIECES_ROOT = "assets/pieces_classic/";
 
-    Img& getCachedPieceSprite(const std::string& pieceCode, const std::string& state);
+    Img &getCachedPieceSprite(const std::string &pieceCode, const std::string &state);
 
-    Img& getCachedPieceFrame(const std::string& pieceCode, const std::string& state, int frameIndex);
+    Img &getCachedPieceFrame(const std::string &pieceCode, const std::string &state, int frameIndex);
 
 }

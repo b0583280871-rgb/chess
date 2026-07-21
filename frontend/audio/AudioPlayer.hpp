@@ -1,12 +1,14 @@
 #pragma once
 
-namespace audio {
+namespace audio
+{
 
-class AudioPlayer {
-public:
-    void playMove();
-    void playCapture();
-    void playGameOver();
-};
+    class AudioPlayer
+    {
+    public:
+        void playMove();
+        void playCapture();
+        void playGameOver();
+    };
 
 }
