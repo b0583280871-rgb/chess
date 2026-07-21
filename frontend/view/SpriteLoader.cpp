@@ -6,13 +6,6 @@
 
 namespace SpriteLoader {
 
-    Img loadPieceIdleSprite(const std::string& pieceCode) {
-        Img img;
-        img.read(PIECES_ROOT + pieceCode + "/states/idle/sprites/1.png",
-                 {config::CELL_SIZE, config::CELL_SIZE}, true);
-        return img;
-    }
-
     std::string pieceCodeFromPiece(Color color, Kind kind) {
         char kindChar = 'K';
         switch (kind) {
