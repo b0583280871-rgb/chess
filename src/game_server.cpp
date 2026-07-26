@@ -8,14 +8,14 @@
 #include <memory>
 #include <thread>
 
-#include "../backend/engine/GameEngine.hpp"
-#include "../backend/input/Controller.hpp"
-#include "../backend/io/BoardFormat.hpp"
-#include "../backend/io/BoardParser.hpp"
-#include "../persistence/Database.hpp"
-#include "../persistence/UserRepository.hpp"
-#include "SnapshotAdapter.hpp"
-#include "protocol/JsonCodec.hpp"
+#include "backend/engine/GameEngine.hpp"
+#include "backend/input/Controller.hpp"
+#include "backend/io/BoardFormat.hpp"
+#include "backend/io/BoardParser.hpp"
+#include "persistence/Database.hpp"
+#include "persistence/UserRepository.hpp"
+#include "networking/adapters/SnapshotAdapter.hpp"
+#include "networking/protocol/JsonCodec.hpp"
 
 typedef websocketpp::server<websocketpp::config::asio> server;
 typedef websocketpp::connection_hdl connection_hdl;

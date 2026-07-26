@@ -1,6 +1,6 @@
 #include "doctest.h"
 
-#include "network/protocol/JsonCodec.hpp"
+#include "networking/protocol/JsonCodec.hpp"
 
 using namespace protocol;
 using nlohmann::json;

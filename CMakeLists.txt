@@ -109,21 +109,21 @@ function(copy_assets target_name)
 endfunction()
 
 add_executable(chess_game
-    backend/chess_main.cpp
-    backend/model/Board.cpp
-    backend/model/Piece.cpp
-    backend/model/Position.cpp
-    backend/rules/PieceRules.cpp
-    backend/rules/RuleEngine.cpp
-    backend/realtime/RealTimeArbiter.cpp
-    backend/input/BoardMapper.cpp
-    backend/input/Controller.cpp
-    backend/engine/GameEngine.cpp
-    backend/texttests/ScriptRunner.cpp
-    backend/io/BoardParser.cpp
-    backend/io/BoardPrinter.cpp
+    src/backend/chess_main.cpp
+    src/backend/model/Board.cpp
+    src/backend/model/Piece.cpp
+    src/backend/model/Position.cpp
+    src/backend/rules/PieceRules.cpp
+    src/backend/rules/RuleEngine.cpp
+    src/backend/realtime/RealTimeArbiter.cpp
+    src/backend/input/BoardMapper.cpp
+    src/backend/input/Controller.cpp
+    src/backend/engine/GameEngine.cpp
+    src/backend/texttests/ScriptRunner.cpp
+    src/backend/io/BoardParser.cpp
+    src/backend/io/BoardPrinter.cpp
 )
-target_include_directories(chess_game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backend)
+target_include_directories(chess_game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/backend)
 
 option(BUILD_TESTS "Build the doctest test suite" ON)
 
@@ -131,43 +131,43 @@ if(BUILD_TESTS)
     enable_testing()
 
     add_executable(chess_tests
-        backend/tests/doctest_main.cpp
-        backend/tests/Config.tests.cpp
-        backend/tests/Board.tests.cpp
-        backend/tests/Movement.tests.cpp
-        backend/tests/Engine.tests.cpp
-        backend/tests/Piece.tests.cpp
-        backend/tests/EngineSnapshot.tests.cpp
-        backend/tests/RealTimeArbiter.tests.cpp
-        backend/tests/SpriteAnimation.tests.cpp
-        backend/tests/Protocol.tests.cpp
-        backend/tests/ProtocolJson.tests.cpp
-        backend/tests/UserRepository.tests.cpp
-        network/protocol/JsonCodec.cpp
-        persistence/Database.cpp
-        persistence/UserRepository.cpp
+        src/backend/tests/doctest_main.cpp
+        src/backend/tests/Config.tests.cpp
+        src/backend/tests/Board.tests.cpp
+        src/backend/tests/Movement.tests.cpp
+        src/backend/tests/Engine.tests.cpp
+        src/backend/tests/Piece.tests.cpp
+        src/backend/tests/EngineSnapshot.tests.cpp
+        src/backend/tests/RealTimeArbiter.tests.cpp
+        src/backend/tests/SpriteAnimation.tests.cpp
+        src/backend/tests/Protocol.tests.cpp
+        src/backend/tests/ProtocolJson.tests.cpp
+        src/backend/tests/UserRepository.tests.cpp
+        src/networking/protocol/JsonCodec.cpp
+        src/persistence/Database.cpp
+        src/persistence/UserRepository.cpp
         ${SQLITE3_SOURCE_DIR}/sqlite3.c
-        backend/model/Board.cpp
-        backend/model/Piece.cpp
-        backend/model/Position.cpp
-        backend/rules/PieceRules.cpp
-        backend/rules/RuleEngine.cpp
-        backend/realtime/RealTimeArbiter.cpp
-        backend/input/BoardMapper.cpp
-        backend/input/Controller.cpp
-        backend/engine/GameEngine.cpp
-        backend/engine/GameSnapshot.cpp
-        backend/texttests/ScriptRunner.cpp
-        backend/io/BoardParser.cpp
-        backend/io/BoardPrinter.cpp
-        frontend/ui/img.cpp
-        frontend/view/SpriteLoader.cpp
+        src/backend/model/Board.cpp
+        src/backend/model/Piece.cpp
+        src/backend/model/Position.cpp
+        src/backend/rules/PieceRules.cpp
+        src/backend/rules/RuleEngine.cpp
+        src/backend/realtime/RealTimeArbiter.cpp
+        src/backend/input/BoardMapper.cpp
+        src/backend/input/Controller.cpp
+        src/backend/engine/GameEngine.cpp
+        src/backend/engine/GameSnapshot.cpp
+        src/backend/texttests/ScriptRunner.cpp
+        src/backend/io/BoardParser.cpp
+        src/backend/io/BoardPrinter.cpp
+        src/frontend/ui/img.cpp
+        src/frontend/view/SpriteLoader.cpp
     )
     target_include_directories(chess_tests PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/backend
-        ${CMAKE_CURRENT_SOURCE_DIR}/backend/third_party
-        ${CMAKE_CURRENT_SOURCE_DIR}/frontend
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/backend
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/backend/third_party
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/frontend
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${NLOHMANN_JSON_INCLUDE_DIR}
         ${SQLITE3_SOURCE_DIR}
         ${PICOSHA2_INCLUDE_DIR}
@@ -186,42 +186,45 @@ endif()
 
 
 add_executable(game_server
-    network/game_server.cpp
-    network/protocol/JsonCodec.cpp
-    persistence/Database.cpp
-    persistence/UserRepository.cpp
+    src/game_server.cpp
+    src/networking/protocol/JsonCodec.cpp
+    src/persistence/Database.cpp
+    src/persistence/UserRepository.cpp
     ${SQLITE3_SOURCE_DIR}/sqlite3.c
-    backend/model/Board.cpp
-    backend/model/Piece.cpp
-    backend/model/Position.cpp
-    backend/rules/PieceRules.cpp
-    backend/rules/RuleEngine.cpp
-    backend/realtime/RealTimeArbiter.cpp
-    backend/input/BoardMapper.cpp
-    backend/input/Controller.cpp
-    backend/io/BoardParser.cpp
-    backend/engine/GameSnapshot.cpp
-    backend/engine/GameEngine.cpp
+    src/backend/model/Board.cpp
+    src/backend/model/Piece.cpp
+    src/backend/model/Position.cpp
+    src/backend/rules/PieceRules.cpp
+    src/backend/rules/RuleEngine.cpp
+    src/backend/realtime/RealTimeArbiter.cpp
+    src/backend/input/BoardMapper.cpp
+    src/backend/input/Controller.cpp
+    src/backend/io/BoardParser.cpp
+    src/backend/engine/GameSnapshot.cpp
+    src/backend/engine/GameEngine.cpp
 )
 target_include_directories(game_server PRIVATE ${SQLITE3_SOURCE_DIR} ${PICOSHA2_INCLUDE_DIR})
 
 add_executable(game_client
-    network/game_client.cpp
-    network/win32_ui/LoginWindow.cpp
-    network/protocol/JsonCodec.cpp
-    frontend/ui/img.cpp
-    frontend/view/SpriteLoader.cpp
-    frontend/view/Renderer.cpp
-    frontend/audio/AudioPlayer.cpp
-    frontend/audio/GameEventDetector.cpp
+    src/game_client.cpp
+    src/networking/transport/GameConnection.cpp
+    src/networking/transport/AuthFlow.cpp
+    src/client-ui/LoginWindow.cpp
+    src/networking/protocol/JsonCodec.cpp
+    src/frontend/ui/img.cpp
+    src/frontend/view/SpriteLoader.cpp
+    src/frontend/view/Renderer.cpp
+    src/frontend/audio/AudioPlayer.cpp
+    src/frontend/audio/GameEventDetector.cpp
 )
-target_include_directories(game_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/frontend)
+target_include_directories(game_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/frontend)
 link_opencv(game_client)
 copy_assets(game_client)
 target_link_libraries(game_client PRIVATE winmm)
 
 foreach(net_target game_server game_client)
     target_include_directories(${net_target} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${WEBSOCKETPP_INCLUDE_DIR}
         ${ASIO_INCLUDE_DIR}
         ${NLOHMANN_JSON_INCLUDE_DIR}

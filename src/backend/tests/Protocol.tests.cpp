@@ -1,7 +1,7 @@
 #include "doctest.h"
 
-#include "network/protocol/MessageTypes.hpp"
-#include "network/protocol/Messages.hpp"
+#include "networking/protocol/MessageTypes.hpp"
+#include "networking/protocol/Messages.hpp"
 
 using namespace protocol;
 
