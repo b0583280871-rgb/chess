@@ -3,12 +3,6 @@
 #include "MessageTypes.hpp"
 #include "Messages.hpp"
 
-// Compile-time struct-type -> MessageType mapping, used by
-// GameConnection::sendMessage<TMsg>() to look up the wire type name for a
-// given payload struct without GameConnection needing to know that struct
-// exists. Deliberately independent of MessageTypeMapping.hpp's runtime
-// string<->enum lookup - this only ever needs to go from a C++ type (known
-// at compile time) to a MessageType value.
 namespace protocol
 {
 
