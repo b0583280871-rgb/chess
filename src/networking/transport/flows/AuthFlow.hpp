@@ -4,7 +4,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include "GameConnection.hpp"
+#include "../GameConnection.hpp"
+#include "PendingResult.hpp"
 #include "networking/protocol/MessageTypes.hpp"
 
 enum class FlowState {
@@ -35,15 +36,22 @@ public:
     const std::string& registerFailureReason() const;
 
 private:
+    struct LoginOutcome {
+        bool success = false;
+        int rating = 0;
+        std::string failureReason;
+    };
+
+    struct RegisterOutcome {
+        bool success = false;
+        std::string failureReason;
+    };
+
+    void beginRequest();
+
     GameConnection& connection_;
     FlowState currentState_ = FlowState::Idle;
 
-    bool loginResultReceived_ = false;
-    bool loginSucceeded_ = false;
-    std::string loginFailureReason_;
-    int loginRating_ = 0;
-
-    bool registerResultReceived_ = false;
-    bool registerSucceeded_ = false;
-    std::string registerFailureReason_;
+    PendingResult<LoginOutcome> loginResult_;
+    PendingResult<RegisterOutcome> registerResult_;
 };

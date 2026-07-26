@@ -2,7 +2,8 @@
 #include "client-ui/LoginWindow.hpp"
 
 #include "networking/transport/GameConnection.hpp"
-#include "networking/transport/AuthFlow.hpp"
+#include "networking/transport/flows/AuthFlow.hpp"
+#include "networking/transport/flows/ClickFlow.hpp"
 
 #include <opencv2/opencv.hpp>
 
@@ -35,16 +36,17 @@ namespace {
     void onMouse(int event, int x, int y, int /*flags*/, void* userdata) {
         if (event != cv::EVENT_LBUTTONDOWN) return;
 
-        GameConnection* connection = static_cast<GameConnection*>(userdata);
-        if (!connection->isConnected()) return;
+        ClickFlow* clickFlow = static_cast<ClickFlow*>(userdata);
+        if (!clickFlow->isConnected()) return;
 
-        connection->sendClick(x, y);
+        clickFlow->sendClick(x, y);
     }
 }
 
 int main() {
     GameConnection connection(URI);
     AuthFlow authFlow(connection);
+    ClickFlow clickFlow(connection);
 
     std::optional<GameSnapshot> latestSnapshot;
     bool hasNewSnapshot = false;
@@ -158,7 +160,7 @@ int main() {
         std::cout << "Assigned role: " << myRole << " (room " << myRoomId << ")" << std::endl;
 
         cv::namedWindow(WINDOW_NAME);
-        cv::setMouseCallback(WINDOW_NAME, onMouse, static_cast<void*>(&connection));
+        cv::setMouseCallback(WINDOW_NAME, onMouse, static_cast<void*>(&clickFlow));
 
         audio::AudioPlayer audioPlayer;
         audio::GameEventDetector eventDetector;

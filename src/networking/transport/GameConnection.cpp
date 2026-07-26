@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include "networking/protocol/JsonCodec.hpp"
-#include "networking/protocol/MessageTypeMapping.hpp"
 
 GameConnection::GameConnection(const std::string& uri) : uri_(uri) {
 }
@@ -68,12 +67,6 @@ bool GameConnection::isConnected() const {
 void GameConnection::send(const std::string& envelopeType, const nlohmann::json& payload) {
     nlohmann::json envelope = protocol::wrapEnvelope(envelopeType, payload);
     client_.send(hdl_, envelope.dump(), websocketpp::frame::opcode::text);
-}
-
-void GameConnection::sendClick(int x, int y) {
-    protocol::ClickMessage click{x, y};
-    nlohmann::json payload = click;
-    send(protocol::toString(protocol::MessageType::Click), payload);
 }
 
 void GameConnection::setMessageHandler(MessageHandler handler) {

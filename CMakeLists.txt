@@ -210,7 +210,8 @@ target_include_directories(game_server PRIVATE ${SQLITE3_SOURCE_DIR} ${PICOSHA2_
 add_executable(game_client
     src/game_client.cpp
     src/networking/transport/GameConnection.cpp
-    src/networking/transport/AuthFlow.cpp
+    src/networking/transport/flows/AuthFlow.cpp
+    src/networking/transport/flows/ClickFlow.cpp
     src/client-ui/LoginWindow.cpp
     src/networking/protocol/JsonCodec.cpp
     src/networking/protocol/MessageTypeMapping.cpp

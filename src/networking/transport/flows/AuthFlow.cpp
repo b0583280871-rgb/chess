@@ -1,48 +1,47 @@
 #include "AuthFlow.hpp"
 
 #include "networking/protocol/JsonCodec.hpp"
-#include "networking/protocol/MessageTypeMapping.hpp"
 
 AuthFlow::AuthFlow(GameConnection& connection) : connection_(connection) {
 }
 
-void AuthFlow::requestLogin(const std::string& email, const std::string& password) {
-    loginResultReceived_ = false;
-    registerResultReceived_ = false;
-
-    protocol::LoginMessage login{email, password};
-    nlohmann::json payload = login;
-    connection_.send(protocol::toString(protocol::MessageType::Login), payload);
-
+void AuthFlow::beginRequest() {
+    loginResult_.reset();
+    registerResult_.reset();
     currentState_ = FlowState::WaitingForResponse;
 }
 
+void AuthFlow::requestLogin(const std::string& email, const std::string& password) {
+    beginRequest();
+
+    protocol::LoginMessage login{email, password};
+    connection_.sendMessage(login);
+}
+
 void AuthFlow::requestRegister(const std::string& email, const std::string& password) {
-    loginResultReceived_ = false;
-    registerResultReceived_ = false;
+    beginRequest();
 
     protocol::RegisterMessage reg{email, password};
-    nlohmann::json payload = reg;
-    connection_.send(protocol::toString(protocol::MessageType::Register), payload);
-
-    currentState_ = FlowState::WaitingForResponse;
+    connection_.sendMessage(reg);
 }
 
 void AuthFlow::handleMessage(protocol::MessageType type, const nlohmann::json& payload) {
     if (type == protocol::MessageType::LoginResult) {
         protocol::LoginResultMessage result = payload.get<protocol::LoginResultMessage>();
-        loginResultReceived_ = true;
-        loginSucceeded_ = result.success;
+        LoginOutcome outcome;
+        outcome.success = result.success;
         if (result.success && result.rating.has_value()) {
-            loginRating_ = result.rating.value();
+            outcome.rating = result.rating.value();
         } else if (!result.success && result.reason.has_value()) {
-            loginFailureReason_ = result.reason.value();
+            outcome.failureReason = result.reason.value();
         }
+        loginResult_.set(outcome);
     } else if (type == protocol::MessageType::RegisterResult) {
         protocol::RegisterResultMessage result = payload.get<protocol::RegisterResultMessage>();
-        registerResultReceived_ = true;
-        registerSucceeded_ = result.success;
-        registerFailureReason_ = result.reason;
+        RegisterOutcome outcome;
+        outcome.success = result.success;
+        outcome.failureReason = result.reason;
+        registerResult_.set(outcome);
     }
 }
 
@@ -55,29 +54,29 @@ FlowState AuthFlow::state() const {
 }
 
 bool AuthFlow::loginResultReceived() const {
-    return loginResultReceived_;
+    return loginResult_.received;
 }
 
 bool AuthFlow::loginSucceeded() const {
-    return loginSucceeded_;
+    return loginResult_.value.success;
 }
 
 int AuthFlow::loginRating() const {
-    return loginRating_;
+    return loginResult_.value.rating;
 }
 
 const std::string& AuthFlow::loginFailureReason() const {
-    return loginFailureReason_;
+    return loginResult_.value.failureReason;
 }
 
 bool AuthFlow::registerResultReceived() const {
-    return registerResultReceived_;
+    return registerResult_.received;
 }
 
 bool AuthFlow::registerSucceeded() const {
-    return registerSucceeded_;
+    return registerResult_.value.success;
 }
 
 const std::string& AuthFlow::registerFailureReason() const {
-    return registerFailureReason_;
+    return registerResult_.value.failureReason;
 }

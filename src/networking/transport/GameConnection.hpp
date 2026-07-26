@@ -7,6 +7,9 @@
 #include <websocketpp/config/asio_no_tls_client.hpp>
 #include <websocketpp/client.hpp>
 
+#include "networking/protocol/MessageTraits.hpp"
+#include "networking/protocol/MessageTypeMapping.hpp"
+
 class GameConnection {
 public:
     using MessageHandler = std::function<void(const std::string& type, const nlohmann::json& payload)>;
@@ -19,7 +22,12 @@ public:
     bool isConnected() const;
 
     void send(const std::string& envelopeType, const nlohmann::json& payload);
-    void sendClick(int x, int y);
+
+    template<typename TMsg>
+    void sendMessage(const TMsg& msg) {
+        nlohmann::json payload = msg;
+        send(protocol::toString(protocol::MessageTraits<TMsg>::kind), payload);
+    }
 
     void setMessageHandler(MessageHandler handler);
 
