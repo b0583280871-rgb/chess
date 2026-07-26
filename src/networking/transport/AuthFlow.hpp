@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 
 #include "GameConnection.hpp"
+#include "networking/protocol/MessageTypes.hpp"
 
 enum class FlowState {
     Idle,
@@ -18,7 +19,7 @@ public:
     void requestLogin(const std::string& email, const std::string& password);
     void requestRegister(const std::string& email, const std::string& password);
 
-    void handleMessage(const std::string& type, const nlohmann::json& payload);
+    void handleMessage(protocol::MessageType type, const nlohmann::json& payload);
 
     void acknowledgeResult();
 

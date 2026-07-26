@@ -144,6 +144,7 @@ if(BUILD_TESTS)
         src/backend/tests/ProtocolJson.tests.cpp
         src/backend/tests/UserRepository.tests.cpp
         src/networking/protocol/JsonCodec.cpp
+    src/networking/protocol/MessageTypeMapping.cpp
         src/persistence/Database.cpp
         src/persistence/UserRepository.cpp
         ${SQLITE3_SOURCE_DIR}/sqlite3.c
@@ -188,6 +189,7 @@ endif()
 add_executable(game_server
     src/game_server.cpp
     src/networking/protocol/JsonCodec.cpp
+    src/networking/protocol/MessageTypeMapping.cpp
     src/persistence/Database.cpp
     src/persistence/UserRepository.cpp
     ${SQLITE3_SOURCE_DIR}/sqlite3.c
@@ -211,6 +213,7 @@ add_executable(game_client
     src/networking/transport/AuthFlow.cpp
     src/client-ui/LoginWindow.cpp
     src/networking/protocol/JsonCodec.cpp
+    src/networking/protocol/MessageTypeMapping.cpp
     src/frontend/ui/img.cpp
     src/frontend/view/SpriteLoader.cpp
     src/frontend/view/Renderer.cpp

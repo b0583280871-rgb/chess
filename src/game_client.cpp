@@ -14,6 +14,7 @@
 
 #include "networking/adapters/SnapshotAdapter.hpp"
 #include "networking/protocol/JsonCodec.hpp"
+#include "networking/protocol/MessageTypeMapping.hpp"
 #include "view/Renderer.hpp"
 #include "audio/AudioPlayer.hpp"
 #include "audio/GameEventDetector.hpp"
@@ -54,18 +55,20 @@ int main() {
 
     try {
         connection.setMessageHandler([&](const std::string& type, const nlohmann::json& payload) {
-            if (type == "login_result" || type == "register_result") {
-                authFlow.handleMessage(type, payload);
-            } else if (type == "room_joined") {
+            protocol::MessageType messageType = protocol::toMessageType(type);
+
+            if (messageType == protocol::MessageType::LoginResult || messageType == protocol::MessageType::RegisterResult) {
+                authFlow.handleMessage(messageType, payload);
+            } else if (messageType == protocol::MessageType::RoomJoined) {
                 protocol::RoomJoinedMessage joined = payload.get<protocol::RoomJoinedMessage>();
                 roomJoinedReceived = true;
                 myRole = joined.role;
                 myRoomId = joined.room_id;
-            } else if (type == "snapshot") {
+            } else if (messageType == protocol::MessageType::Snapshot) {
                 protocol::SnapshotMessage snapMsg = payload.get<protocol::SnapshotMessage>();
                 latestSnapshot = SnapshotAdapter::fromProtocol(snapMsg);
                 hasNewSnapshot = true;
-            } else if (type == "error") {
+            } else if (messageType == protocol::MessageType::Error) {
                 protocol::ErrorMessage err = payload.get<protocol::ErrorMessage>();
                 std::cout << "Server error: " << err.message << std::endl;
             } else {

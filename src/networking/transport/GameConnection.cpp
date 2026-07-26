@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "networking/protocol/JsonCodec.hpp"
+#include "networking/protocol/MessageTypeMapping.hpp"
 
 GameConnection::GameConnection(const std::string& uri) : uri_(uri) {
 }
@@ -72,7 +73,7 @@ void GameConnection::send(const std::string& envelopeType, const nlohmann::json&
 void GameConnection::sendClick(int x, int y) {
     protocol::ClickMessage click{x, y};
     nlohmann::json payload = click;
-    send("click", payload);
+    send(protocol::toString(protocol::MessageType::Click), payload);
 }
 
 void GameConnection::setMessageHandler(MessageHandler handler) {

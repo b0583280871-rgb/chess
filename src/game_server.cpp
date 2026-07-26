@@ -16,6 +16,7 @@
 #include "persistence/UserRepository.hpp"
 #include "networking/adapters/SnapshotAdapter.hpp"
 #include "networking/protocol/JsonCodec.hpp"
+#include "networking/protocol/MessageTypeMapping.hpp"
 
 typedef websocketpp::server<websocketpp::config::asio> server;
 typedef websocketpp::connection_hdl connection_hdl;
@@ -99,14 +100,16 @@ int main() {
             const std::string rawText = msg->get_payload();
 
             std::string type;
+            protocol::MessageType messageType;
             try {
                 type = protocol::envelopeType(rawText);
+                messageType = protocol::toMessageType(type);
             } catch (const std::exception& e) {
                 std::cout << "Ignoring malformed message: " << e.what() << std::endl;
                 return;
             }
 
-            if (type == "register") {
+            if (messageType == protocol::MessageType::Register) {
                 nlohmann::json parsed = nlohmann::json::parse(rawText);
                 protocol::RegisterMessage reg = parsed.at("payload").get<protocol::RegisterMessage>();
 
@@ -117,7 +120,7 @@ int main() {
 
                 protocol::RegisterResultMessage resultMsg{result.success, result.reason};
                 nlohmann::json resultPayload = resultMsg;
-                sendTo(hdl, "register_result", resultPayload);
+                sendTo(hdl, protocol::toString(protocol::MessageType::RegisterResult), resultPayload);
 
                 if (result.success) {
                     std::cout << "Register succeeded for email: " << reg.email << std::endl;
@@ -126,7 +129,7 @@ int main() {
                               << ", reason: " << result.reason << std::endl;
                 }
 
-            } else if (type == "login") {
+            } else if (messageType == protocol::MessageType::Login) {
                 nlohmann::json parsed = nlohmann::json::parse(rawText);
                 protocol::LoginMessage login = parsed.at("payload").get<protocol::LoginMessage>();
 
@@ -143,7 +146,7 @@ int main() {
                     resultMsg.reason = result.reason;
                 }
                 nlohmann::json resultPayload = resultMsg;
-                sendTo(hdl, "login_result", resultPayload);
+                sendTo(hdl, protocol::toString(protocol::MessageType::LoginResult), resultPayload);
 
                 if (!result.success) {
                     std::cout << "Login failed for email: " << login.username
@@ -166,17 +169,17 @@ int main() {
 
                 protocol::RoomJoinedMessage joined{ROOM_ID, role};
                 nlohmann::json joinedPayload = joined;
-                sendTo(hdl, "room_joined", joinedPayload);
+                sendTo(hdl, protocol::toString(protocol::MessageType::RoomJoined), joinedPayload);
 
                 std::cout << "Login succeeded for email: " << login.username
                           << ", assigned role: " << role << std::endl;
-            } else if (type == "click") {
+            } else if (messageType == protocol::MessageType::Click) {
                 auto it = connectionInfos.find(hdl);
                 if (it == connectionInfos.end() || !it->second.loggedIn) {
                     std::cout << "Rejecting click from a connection that hasn't logged in yet." << std::endl;
                     protocol::ErrorMessage err{"You must log in before sending clicks."};
                     nlohmann::json errPayload = err;
-                    sendTo(hdl, "error", errPayload);
+                    sendTo(hdl, protocol::toString(protocol::MessageType::Error), errPayload);
                     return;
                 }
 
@@ -208,7 +211,7 @@ int main() {
             GameSnapshot snap = GameEngine::snapshot(state);
             protocol::SnapshotMessage snapMsg = SnapshotAdapter::toProtocol(snap);
             nlohmann::json payload = snapMsg;
-            nlohmann::json envelope = protocol::wrapEnvelope("snapshot", payload);
+            nlohmann::json envelope = protocol::wrapEnvelope(protocol::toString(protocol::MessageType::Snapshot), payload);
             std::string rawText = envelope.dump();
 
             for (const auto& entry : connectionInfos) {

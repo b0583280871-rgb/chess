@@ -1,6 +1,7 @@
 #include "AuthFlow.hpp"
 
 #include "networking/protocol/JsonCodec.hpp"
+#include "networking/protocol/MessageTypeMapping.hpp"
 
 AuthFlow::AuthFlow(GameConnection& connection) : connection_(connection) {
 }
@@ -11,7 +12,7 @@ void AuthFlow::requestLogin(const std::string& email, const std::string& passwor
 
     protocol::LoginMessage login{email, password};
     nlohmann::json payload = login;
-    connection_.send("login", payload);
+    connection_.send(protocol::toString(protocol::MessageType::Login), payload);
 
     currentState_ = FlowState::WaitingForResponse;
 }
@@ -22,13 +23,13 @@ void AuthFlow::requestRegister(const std::string& email, const std::string& pass
 
     protocol::RegisterMessage reg{email, password};
     nlohmann::json payload = reg;
-    connection_.send("register", payload);
+    connection_.send(protocol::toString(protocol::MessageType::Register), payload);
 
     currentState_ = FlowState::WaitingForResponse;
 }
 
-void AuthFlow::handleMessage(const std::string& type, const nlohmann::json& payload) {
-    if (type == "login_result") {
+void AuthFlow::handleMessage(protocol::MessageType type, const nlohmann::json& payload) {
+    if (type == protocol::MessageType::LoginResult) {
         protocol::LoginResultMessage result = payload.get<protocol::LoginResultMessage>();
         loginResultReceived_ = true;
         loginSucceeded_ = result.success;
@@ -37,7 +38,7 @@ void AuthFlow::handleMessage(const std::string& type, const nlohmann::json& payl
         } else if (!result.success && result.reason.has_value()) {
             loginFailureReason_ = result.reason.value();
         }
-    } else if (type == "register_result") {
+    } else if (type == protocol::MessageType::RegisterResult) {
         protocol::RegisterResultMessage result = payload.get<protocol::RegisterResultMessage>();
         registerResultReceived_ = true;
         registerSucceeded_ = result.success;
